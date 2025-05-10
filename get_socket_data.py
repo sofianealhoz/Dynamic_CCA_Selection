@@ -2,12 +2,12 @@
 
 from bcc import BPF
 import time
-from time import strftime, sleep
 from socket import inet_ntop, AF_INET, AF_INET6
 from struct import pack
 import ctypes as ct
 import csv
-import sys
+import os
+import ipaddress
 
 
 
@@ -94,9 +94,9 @@ static int trace_event(struct pt_regs *ctx, struct sock *skp)
     if (skp == NULL)
         return 0;
     u32 pid = bpf_get_current_pid_tgid() >> 32;
-    //if(skp->__sk_common.skc_num != 12345){
-    //    return 0;
-    //}
+    if(skp->__sk_common.skc_num != 80){
+        return 0;
+    }
 
     // or:
     //u32 target_saddr = 0;  
@@ -362,8 +362,13 @@ def print_ipv4_event(cpu, data, size):
         event.delivered, tcpstate.get(event.tcp_state, event.tcp_state),
         state.get(event.state, event.state)
     ])
+    csvfile.flush()
+    os.fsync(csvfile.fileno())
 
-
+def clean_ipv6_mapped_addr(addr):
+        if addr.startswith("::ffff:"):
+            return addr[7:]  
+        return addr
 
 def print_ipv6_event(cpu, data, size):
     event = ct.cast(data, ct.POINTER(Data_ipv6)).contents
@@ -373,6 +378,8 @@ def print_ipv6_event(cpu, data, size):
     source_addr = inet_ntop(AF_INET6, event.saddr)
     dest_addr = inet_ntop(AF_INET6, event.daddr)
     
+    source_addr = clean_ipv6_mapped_addr(source_addr)
+    dest_addr = clean_ipv6_mapped_addr(dest_addr)
     # print(
     #     f"{event.tstamp};{source_addr};{event.lport};{dest_addr};{event.dport};"
     #     f"{event.srtt};{event.mdev};{event.min_rtt};{event.inflight};{event.total_lost};{event.total_retrans};"
@@ -389,13 +396,15 @@ def print_ipv6_event(cpu, data, size):
         event.delivered, tcpstate.get(event.tcp_state, event.tcp_state),
         state.get(event.state, event.state)
     ])
+    csvfile.flush()
+    os.fsync(csvfile.fileno())
 
 
 # initialize BPF
 b = BPF(text=bpf_text)
 b.attach_kprobe(event="tcp_ack", fn_name="trace_ack")
-b["ipv4_events"].open_perf_buffer(print_ipv4_event)
-b["ipv6_events"].open_perf_buffer(print_ipv6_event)
+b["ipv4_events"].open_perf_buffer(print_ipv4_event, page_cnt=1024)
+b["ipv6_events"].open_perf_buffer(print_ipv6_event, page_cnt=1024)
 # while 1:
 #     try:
 #         b.perf_buffer_poll()
