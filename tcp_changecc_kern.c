@@ -19,7 +19,7 @@ struct connection_tuple {
     long src_ip;    
     long dst_ip;    
     long src_port;    
-    long dst_port;   
+    long dst_port;   	
 };
 
 
@@ -31,17 +31,34 @@ struct {
     __type(value, char[10]);
 } key_cong_map SEC(".maps");
 
-const char RENO[] = "reno";
-const char CUBIC[] = "cubic";
-const char ILLINOIS[] = "illinois";
-const char VEGAS[] = "vegas";
-const char BBR[] = "bbr";
-const char WESTWOOD[] = "westwood";
-const char HIGHSPEED[] = "highspeed";
-const char HYBLA[] = "hybla";
-const char SCALABLE[] = "scalable";
-const char YEAH[] = "yeah";
-const char DCTCP[] = "dctcp";
+struct tcp_cc_names {
+    char reno[5];       
+    char cubic[6];      
+    char illinois[9];   
+    char vegas[6];      
+    char bbr[4];        
+    char westwood[9];   
+    char highspeed[10]; 
+    char hybla[6];      
+    char scalable[9];   
+    char yeah[5];       
+    char dctcp[6];      
+} __attribute__((packed));
+
+
+const struct tcp_cc_names cc_names SEC(".rodata") = {
+    .reno = "reno",
+    .cubic = "cubic",
+    .illinois = "illinois",
+    .vegas = "vegas",
+    .bbr = "bbr",
+    .westwood = "westwood",
+    .highspeed = "highspeed",
+    .hybla = "hybla",
+    .scalable = "scalable",
+    .yeah = "yeah",
+    .dctcp = "dctcp"
+};
 
 static inline void init_map()
 {
@@ -57,7 +74,7 @@ static inline void init_map()
     tuple0.dst_port = 0;      
     
 
-    bpf_map_update_elem(&key_cong_map, &tuple0, RENO, BPF_ANY);
+    bpf_map_update_elem(&key_cong_map, &tuple0, cc_names.reno, BPF_ANY);
 
 
     struct connection_tuple tuple1;
@@ -68,7 +85,7 @@ static inline void init_map()
     tuple1.dst_port = 5004;   
     
 
-    bpf_map_update_elem(&key_cong_map, &tuple1, CUBIC, BPF_ANY);
+    bpf_map_update_elem(&key_cong_map, &tuple1, cc_names.cubic, BPF_ANY);
 
 
     struct connection_tuple tuple2;
@@ -79,7 +96,7 @@ static inline void init_map()
     tuple2.dst_port = 5005;   
     
 
-    bpf_map_update_elem(&key_cong_map, &tuple2, ILLINOIS, BPF_ANY);
+    bpf_map_update_elem(&key_cong_map, &tuple2, cc_names.illinois, BPF_ANY);
 
 
     struct connection_tuple tuple3;
@@ -90,7 +107,7 @@ static inline void init_map()
     tuple3.dst_port = 5006;   
     
 
-    bpf_map_update_elem(&key_cong_map, &tuple3, VEGAS, BPF_ANY);
+    bpf_map_update_elem(&key_cong_map, &tuple3, cc_names.vegas, BPF_ANY);
 
 
     struct connection_tuple tuple4;
@@ -101,7 +118,7 @@ static inline void init_map()
     tuple4.dst_port = 5007;   
     
 
-    bpf_map_update_elem(&key_cong_map, &tuple4, BBR, BPF_ANY);
+    bpf_map_update_elem(&key_cong_map, &tuple4, cc_names.bbr, BPF_ANY);
 
 
     struct connection_tuple tuple5;
@@ -112,7 +129,7 @@ static inline void init_map()
     tuple5.dst_port = 5008;   
     
 
-    bpf_map_update_elem(&key_cong_map, &tuple5, WESTWOOD, BPF_ANY);
+    bpf_map_update_elem(&key_cong_map, &tuple5, cc_names.westwood, BPF_ANY);
 
 
     struct connection_tuple tuple6;
@@ -123,7 +140,7 @@ static inline void init_map()
     tuple6.dst_port = 5009;   
     
 
-    bpf_map_update_elem(&key_cong_map, &tuple6, HIGHSPEED, BPF_ANY);
+    bpf_map_update_elem(&key_cong_map, &tuple6, cc_names.highspeed, BPF_ANY);
 
 
     struct connection_tuple tuple7;
@@ -134,7 +151,7 @@ static inline void init_map()
     tuple7.dst_port = 5010;   
     
 
-    bpf_map_update_elem(&key_cong_map, &tuple7, HYBLA, BPF_ANY);
+    bpf_map_update_elem(&key_cong_map, &tuple7, cc_names.hybla, BPF_ANY);
 
 
     struct connection_tuple tuple8;
@@ -145,7 +162,7 @@ static inline void init_map()
     tuple8.dst_port = 5011;   
     
 
-    bpf_map_update_elem(&key_cong_map, &tuple8, SCALABLE, BPF_ANY);
+    bpf_map_update_elem(&key_cong_map, &tuple8, cc_names.scalable, BPF_ANY);
 
 
     struct connection_tuple tuple9;
@@ -156,7 +173,7 @@ static inline void init_map()
     tuple9.dst_port = 5012;   
     
 
-    bpf_map_update_elem(&key_cong_map, &tuple9, YEAH, BPF_ANY);
+    bpf_map_update_elem(&key_cong_map, &tuple9, cc_names.yeah, BPF_ANY);
 
 
     struct connection_tuple tuple10;
@@ -167,7 +184,7 @@ static inline void init_map()
     tuple10.dst_port = 5013;   
     
 
-    bpf_map_update_elem(&key_cong_map, &tuple10, DCTCP, BPF_ANY);
+    bpf_map_update_elem(&key_cong_map, &tuple10, cc_names.dctcp, BPF_ANY);
 }
 SEC("sockops")
 int bpf_basertt(struct bpf_sock_ops *skops)
