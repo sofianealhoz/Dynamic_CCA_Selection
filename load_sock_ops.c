@@ -105,17 +105,17 @@ int main(int argc, char **argv)
 	if (logFlag)
 		printf("TCP BPF Loaded %s\n", fn);
 
-	struct bpf_map *cong_map = bpf_object__find_map_by_name(obj, "cong_map");
-   	struct bpf_map *ip_cong_map = bpf_object__find_map_by_name(obj, "ip_cong_map");
+	struct bpf_map *key_cong_map = bpf_object__find_map_by_name(obj, "key_cong_map");
+
     
-    	if (!cong_map || !ip_cong_map) {
+    	if (!key_cong_map) {
       	  printf("ERROR: could not find required maps\n");
        	  bpf_object__close(obj);
        	  return 4;
    	}
     
-   	int cong_map_fd = bpf_map__fd(cong_map);
-    	int ip_cong_map_fd = bpf_map__fd(ip_cong_map);
+   	int key_cong_map_fd = bpf_map__fd(key_cong_map);
+
     
     	// Attacher le programme
     	error = bpf_prog_attach(prog_fd, cg_fd, BPF_CGROUP_SOCK_OPS, 0);

@@ -94,9 +94,9 @@ static int trace_event(struct pt_regs *ctx, struct sock *skp)
     if (skp == NULL)
         return 0;
     u32 pid = bpf_get_current_pid_tgid() >> 32;
-    if(skp->__sk_common.skc_num != 80){
-        return 0;
-    }
+    //if(skp->__sk_common.skc_num != 80){
+    //    return 0;
+    //}
 
     // or:
     //u32 target_saddr = 0;  
