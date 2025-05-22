@@ -94,9 +94,10 @@ static int trace_event(struct pt_regs *ctx, struct sock *skp)
     if (skp == NULL)
         return 0;
     u32 pid = bpf_get_current_pid_tgid() >> 32;
-    //if(skp->__sk_common.skc_num != 80){
-    //    return 0;
-    //}
+    if (skp->__sk_common.skc_num != 5201)
+    {
+        return 0;
+    }
 
     // or:
     //u32 target_saddr = 0;  
@@ -328,7 +329,7 @@ filename = f"data_{int(DURATION)}s.csv"
 csvfile = open(filename, "w", newline="")
 writer  = csv.writer(csvfile)
 writer.writerow([
-    "saddr", "lport", "daddr", "dport","tstamp",
+    "daddr", "dport","tstamp",
     "srtt", "rtt", "mdev", "mdev_max", "rttvar", "min_rtt",
     "inflight", "lost", "recv_rtt", "retrans_out",
     "total_lost", "sack_out", "total_retrans",
@@ -353,7 +354,7 @@ def print_ipv4_event(cpu, data, size):
     #     f"{state[event.tcp_state]};{event.sk_pacing_rate};{event.sk_max_pacing_rate};{event.delivered}"
     # )
     writer.writerow([
-        source_addr, event.lport, dest_addr, event.dport, event.tstamp,
+        dest_addr, event.dport, event.tstamp,
         event.srtt, event.rtt, event.mdev, event.mdev_max, event.rttvar, event.min_rtt,
         event.inflight, event.lost, event.recv_rtt, event.retrans_out,
         event.total_lost, event.sack_out, event.total_retrans,
@@ -387,7 +388,7 @@ def print_ipv6_event(cpu, data, size):
     #     f"{state[event.tcp_state]};{event.sk_pacing_rate};{event.sk_max_pacing_rate};{event.delivered}"
     # )
     writer.writerow([
-        source_addr, event.lport, dest_addr, event.dport, event.tstamp,
+        dest_addr, event.dport, event.tstamp,
         event.srtt, event.rtt, event.mdev, event.mdev_max, event.rttvar, event.min_rtt,
         event.inflight, event.lost, event.recv_rtt, event.retrans_out,
         event.total_lost, event.sack_out, event.total_retrans,
