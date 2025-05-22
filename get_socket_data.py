@@ -404,8 +404,8 @@ def print_ipv6_event(cpu, data, size):
 # initialize BPF
 b = BPF(text=bpf_text)
 b.attach_kprobe(event="tcp_ack", fn_name="trace_ack")
-b["ipv4_events"].open_perf_buffer(print_ipv4_event, page_cnt=1024)
-b["ipv6_events"].open_perf_buffer(print_ipv6_event, page_cnt=1024)
+b["ipv4_events"].open_perf_buffer(print_ipv4_event, page_cnt=8192)
+b["ipv6_events"].open_perf_buffer(print_ipv6_event, page_cnt=8192)
 # while 1:
 #     try:
 #         b.perf_buffer_poll()
@@ -415,7 +415,7 @@ end_time = start_ts + DURATION
 
 while time.time() < end_time:
     # 100ms timeout so we wake up to check the clock
-    b.perf_buffer_poll(timeout=100)
+    b.perf_buffer_poll(timeout=10)
 
 csvfile.close()
 print(f"Wrote {filename}")
