@@ -323,9 +323,8 @@ state[4] = 'loss'
 DURATION = 60.0 
 
 start_ts = int(time.time())
-filename = f"data_{int(DURATION)}s.csv"
+filename = f"data_macbook_{int(DURATION)}s.csv"
 
-# 3) Open the CSV for writing and write a header row:
 csvfile = open(filename, "w", newline="")
 writer  = csv.writer(csvfile)
 writer.writerow([
@@ -338,21 +337,28 @@ writer.writerow([
     "delivered", "tcp_state", "state"
 ])
 
-# process event
-def print_ipv4_event(cpu, data, size):
+last_ipv4_sample = None
+last_ipv6_sample = None
+
+def store_ipv4_event(cpu, data, size):
+    global last_ipv4_sample
     event = ct.cast(data, ct.POINTER(Data_ipv4)).contents
-    t = time.time()
-    #print(f"\ntime: {int(round(t * 1000))}\n")
-    
+    last_ipv4_sample = event
+
+def store_ipv6_event(cpu, data, size):
+    global last_ipv6_sample
+    event = ct.cast(data, ct.POINTER(Data_ipv6)).contents
+    last_ipv6_sample = event
+
+def clean_ipv6_mapped_addr(addr):
+    if addr.startswith("::ffff:"):
+        return addr[7:]  
+    return addr
+
+def write_ipv4_to_csv(event):
     source_addr = inet_ntop(AF_INET, pack("I", event.saddr))
     dest_addr = inet_ntop(AF_INET, pack("I", event.daddr))
     
-    # print(
-    #     f"{event.tstamp};{source_addr};{event.lport};{dest_addr};{event.dport};"
-    #     f"{event.srtt};{event.mdev};{event.min_rtt};{event.inflight};{event.total_lost};{event.total_retrans}; "
-    #     f"{event.rcv_buf};{event.snd_buf};{event.snd_cwnd};{tcpstate[event.state]};"
-    #     f"{state[event.tcp_state]};{event.sk_pacing_rate};{event.sk_max_pacing_rate};{event.delivered}"
-    # )
     writer.writerow([
         dest_addr, event.dport, event.tstamp,
         event.srtt, event.rtt, event.mdev, event.mdev_max, event.rttvar, event.min_rtt,
@@ -363,30 +369,14 @@ def print_ipv4_event(cpu, data, size):
         event.delivered, tcpstate.get(event.tcp_state, event.tcp_state),
         state.get(event.state, event.state)
     ])
-    csvfile.flush()
-    os.fsync(csvfile.fileno())
 
-def clean_ipv6_mapped_addr(addr):
-        if addr.startswith("::ffff:"):
-            return addr[7:]  
-        return addr
-
-def print_ipv6_event(cpu, data, size):
-    event = ct.cast(data, ct.POINTER(Data_ipv6)).contents
-    t = time.time()
-    #print(f"\ntime: {int(round(t * 1000))}\n")
-    
+def write_ipv6_to_csv(event):
     source_addr = inet_ntop(AF_INET6, event.saddr)
     dest_addr = inet_ntop(AF_INET6, event.daddr)
     
     source_addr = clean_ipv6_mapped_addr(source_addr)
     dest_addr = clean_ipv6_mapped_addr(dest_addr)
-    # print(
-    #     f"{event.tstamp};{source_addr};{event.lport};{dest_addr};{event.dport};"
-    #     f"{event.srtt};{event.mdev};{event.min_rtt};{event.inflight};{event.total_lost};{event.total_retrans};"
-    #     f"{event.rcv_buf};{event.snd_buf};{event.snd_cwnd};{tcpstate[event.state]};"
-    #     f"{state[event.tcp_state]};{event.sk_pacing_rate};{event.sk_max_pacing_rate};{event.delivered}"
-    # )
+    
     writer.writerow([
         dest_addr, event.dport, event.tstamp,
         event.srtt, event.rtt, event.mdev, event.mdev_max, event.rttvar, event.min_rtt,
@@ -397,25 +387,61 @@ def print_ipv6_event(cpu, data, size):
         event.delivered, tcpstate.get(event.tcp_state, event.tcp_state),
         state.get(event.state, event.state)
     ])
-    csvfile.flush()
-    os.fsync(csvfile.fileno())
-
 
 # initialize BPF
 b = BPF(text=bpf_text)
 b.attach_kprobe(event="tcp_ack", fn_name="trace_ack")
-b["ipv4_events"].open_perf_buffer(print_ipv4_event, page_cnt=8192)
-b["ipv6_events"].open_perf_buffer(print_ipv6_event, page_cnt=8192)
-# while 1:
-#     try:
-#         b.perf_buffer_poll()
-#     except KeyboardInterrupt:
-#         exit()
+b["ipv4_events"].open_perf_buffer(store_ipv4_event, page_cnt=8192)
+b["ipv6_events"].open_perf_buffer(store_ipv6_event, page_cnt=8192)
+
+# constant storage
+sample_interval = 0.1  # 0.1s = 100ms
+last_sample_time = time.time()
 end_time = start_ts + DURATION
+sample_count = 0  # to verify how many samples we collect
 
-while time.time() < end_time:
-    # 100ms timeout so we wake up to check the clock
-    b.perf_buffer_poll(timeout=10)
+print(f"Start sampling: every {sample_interval*1000:.0f}ms")
+print(f"Expected: {int(DURATION/sample_interval)} sampels for {DURATION:.0f} secondes")
 
-csvfile.close()
-print(f"Wrote {filename}")
+try:
+    while time.time() < end_time:
+        current_time = time.time()
+        
+        # (every 100ms) Poll the perf buffer
+        if current_time - last_sample_time >= sample_interval:
+            # Read all events from the buffer (to clear it and avoid overflow)
+            # but the callbacks only store the last event
+            b.perf_buffer_poll(timeout=0)
+            
+            if last_ipv4_sample:
+                write_ipv4_to_csv(last_ipv4_sample)
+                sample_count += 1
+                last_ipv4_sample = None  # Reset after writing
+            
+            if last_ipv6_sample:
+                write_ipv6_to_csv(last_ipv6_sample)
+                sample_count += 1
+                last_ipv6_sample = None  # Reset after writing
+                
+            last_sample_time = current_time
+            
+        else:
+            # Wait intelligently until the next sample
+            time_to_next_sample = sample_interval - (current_time - last_sample_time)
+            sleep_time = min(time_to_next_sample, 0.01)  # 10ms sleep max
+            if sleep_time > 0:
+                time.sleep(sleep_time)
+
+except KeyboardInterrupt:
+    print("Sampling interrupted by user.")
+finally:
+    # Flush final et fermeture propre
+    csvfile.flush()
+    os.fsync(csvfile.fileno())  # only one time at the end
+    csvfile.close()
+    
+    duration_actual = time.time() - start_ts
+    print(f"Collection done in {duration_actual:.1f}s")
+    print(f"Samples collected in {sample_count}")
+    print(f"Average frequency: {sample_count/duration_actual:.1f} samples/seconde")
+    print(f"Wrote {filename}")
