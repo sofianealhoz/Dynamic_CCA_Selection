@@ -323,7 +323,7 @@ state[4] = 'loss'
 DURATION = 60.0 
 
 start_ts = int(time.time())
-filename = f"data_macbook_{int(DURATION)}s.csv"
+filename = f"test_5.13_{int(DURATION)}s.csv"
 
 csvfile = open(filename, "w", newline="")
 writer  = csv.writer(csvfile)
@@ -391,8 +391,8 @@ def write_ipv6_to_csv(event):
 # initialize BPF
 b = BPF(text=bpf_text)
 b.attach_kprobe(event="tcp_ack", fn_name="trace_ack")
-b["ipv4_events"].open_perf_buffer(store_ipv4_event, page_cnt=8192)
-b["ipv6_events"].open_perf_buffer(store_ipv6_event, page_cnt=8192)
+b["ipv4_events"].open_perf_buffer(store_ipv4_event, page_cnt=16)
+b["ipv6_events"].open_perf_buffer(store_ipv6_event, page_cnt=16)
 
 # constant storage
 sample_interval = 0.1  # 0.1s = 100ms
@@ -442,6 +442,6 @@ finally:
     
     duration_actual = time.time() - start_ts
     print(f"Collection done in {duration_actual:.1f}s")
-    print(f"Samples collected in {sample_count}")
+    print(f"Samples collected: {sample_count}")
     print(f"Average frequency: {sample_count/duration_actual:.1f} samples/seconde")
     print(f"Wrote {filename}")
