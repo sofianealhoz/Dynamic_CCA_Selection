@@ -46,6 +46,8 @@ models = {
 
 results = {}
 
+skf_mixed = StratifiedKFold(n_splits=5, shuffle=True, random_state=42)
+
 for name, model in models.items():
     print(f"\n=== {name} ===")
 
@@ -68,7 +70,7 @@ for name, model in models.items():
 
     y_pred = model.predict(X_test_model)
 
-    cv_scores = cross_val_score(model, X_train_model, y_train_model, cv=5)
+    cv_scores = cross_val_score(model, X_train_model, y_train_model, cv=skf_mixed)
 
     results[name] = {
         'model': model,
