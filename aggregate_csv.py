@@ -42,13 +42,13 @@ def aggregate_csv_files(output_file, input_files):
                 else:
                     next(reader, None)
                 
-            file_rows = 0
-            for row in reader:
-                if row:
-                    writer.writerow(row)
-                    file_rows += 1
-                    total_rows += 1
-            print(f"{file_rows} rows wrote")
+                file_rows = 0
+                for row in reader:
+                    if row:
+                        writer.writerow(row)
+                        file_rows += 1
+                        total_rows += 1
+                print(f"{file_rows} rows wrote")
 
     print(f"Aggregation terminated")
     print(f"{total_rows} wrote in total")
