@@ -8,6 +8,7 @@ import ctypes as ct
 import csv
 import os
 import ipaddress
+import sys
 
 
 
@@ -320,21 +321,22 @@ state[2] = 'cwr'
 state[3] = 'recovery'
 state[4] = 'loss'
 
+LABEL = sys.argv[1]
 DURATION = 60.0 
 
 start_ts = int(time.time())
-filename = f"test_5.13_{int(DURATION)}s.csv"
+filename = f"new_data_debianVM_{LABEL}_iperf3_{int(DURATION)}s.csv"
 
 csvfile = open(filename, "w", newline="")
 writer  = csv.writer(csvfile)
 writer.writerow([
-    "daddr", "dport","tstamp",
+    "label","connection_id",
     "srtt", "rtt", "mdev", "mdev_max", "rttvar", "min_rtt",
     "inflight", "lost", "recv_rtt", "retrans_out",
     "total_lost", "sack_out", "total_retrans",
     "rcv_buf", "snd_buf", "snd_cwnd",
     "sk_pacing_rate", "sk_max_pacing_rate",
-    "delivered", "tcp_state", "state"
+    "delivered"
 ])
 
 last_ipv4_sample = None
@@ -358,16 +360,16 @@ def clean_ipv6_mapped_addr(addr):
 def write_ipv4_to_csv(event):
     source_addr = inet_ntop(AF_INET, pack("I", event.saddr))
     dest_addr = inet_ntop(AF_INET, pack("I", event.daddr))
+    connection_id = f"{dest_addr};{event.dport};{event.lport}"
     
     writer.writerow([
-        dest_addr, event.dport, event.tstamp,
+        LABEL, connection_id, 
         event.srtt, event.rtt, event.mdev, event.mdev_max, event.rttvar, event.min_rtt,
         event.inflight, event.lost, event.recv_rtt, event.retrans_out,
         event.total_lost, event.sack_out, event.total_retrans,
         event.rcv_buf, event.snd_buf, event.snd_cwnd,
         event.sk_pacing_rate, event.sk_max_pacing_rate,
-        event.delivered, tcpstate.get(event.tcp_state, event.tcp_state),
-        state.get(event.state, event.state)
+        event.delivered
     ])
 
 def write_ipv6_to_csv(event):
@@ -376,23 +378,25 @@ def write_ipv6_to_csv(event):
     
     source_addr = clean_ipv6_mapped_addr(source_addr)
     dest_addr = clean_ipv6_mapped_addr(dest_addr)
+
+    connection_id = f"{dest_addr};{event.dport};{event.lport}"
+
     
     writer.writerow([
-        dest_addr, event.dport, event.tstamp,
+        LABEL, connection_id,
         event.srtt, event.rtt, event.mdev, event.mdev_max, event.rttvar, event.min_rtt,
         event.inflight, event.lost, event.recv_rtt, event.retrans_out,
         event.total_lost, event.sack_out, event.total_retrans,
         event.rcv_buf, event.snd_buf, event.snd_cwnd,
         event.sk_pacing_rate, event.sk_max_pacing_rate,
-        event.delivered, tcpstate.get(event.tcp_state, event.tcp_state),
-        state.get(event.state, event.state)
+        event.delivered
     ])
 
 # initialize BPF
 b = BPF(text=bpf_text)
 b.attach_kprobe(event="tcp_ack", fn_name="trace_ack")
-b["ipv4_events"].open_perf_buffer(store_ipv4_event, page_cnt=16)
-b["ipv6_events"].open_perf_buffer(store_ipv6_event, page_cnt=16)
+b["ipv4_events"].open_perf_buffer(store_ipv4_event, page_cnt=256)
+b["ipv6_events"].open_perf_buffer(store_ipv6_event, page_cnt=256)
 
 # constant storage
 sample_interval = 0.1  # 0.1s = 100ms
