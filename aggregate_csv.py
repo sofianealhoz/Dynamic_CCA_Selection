@@ -15,7 +15,7 @@ def aggregate_csv_files(output_file, input_files):
             missing_files.append(file)
     
     if missing_files:
-        print(f"❌ missing files: {missing_files}")
+        print(f" missing files: {missing_files}")
         return False
 
     print(f"Aggregating {len(input_files)} files to {output_file}")
@@ -63,7 +63,7 @@ def main():
     if os.path.exists(output_file):
         response = input(f"⚠️  The file {output_file} already exist. Overwrite? (y/N): ")
         if response.lower() not in ['y', 'yes', 'oui', '']:
-            print("❌ Operation aborted")
+            print(" Operation aborted")
             sys.exit(1)
 
     success = aggregate_csv_files(output_file, input_files)
@@ -79,7 +79,7 @@ def main():
         print(f"   - total rows: {total_lines}")
         print(f"   - size: {file_size / 1024:.1f} KB")
     else:
-        print("\n❌ Agregation failed")
+        print("\nAgregation failed")
         sys.exit(1)
 
 if __name__ == "__main__":

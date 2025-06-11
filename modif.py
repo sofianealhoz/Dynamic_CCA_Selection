@@ -16,8 +16,7 @@ df = pd.read_csv(filename)
 #     df[i][0] = 'Fibre'
 # df.loc[533:1071, 'Label'] = 'Mobile'
 # df.loc[1072:1638, 'Label'] = 'Fibre'
-#df = df.drop('tstamp', axis=1)
-df.insert(0,'label','wi-fi')
+df = df.drop(['connection_id','min_rtt','mdev_max','rttvar','total_lost','total_retrans','rcv_buf','snd_buf'], axis=1)
 
 # Sauvegarder directement dans le même fichier
 df.to_csv(filename, index=False)
