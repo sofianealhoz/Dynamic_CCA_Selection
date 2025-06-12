@@ -325,7 +325,7 @@ LABEL = sys.argv[1]
 DURATION = 60.0 
 
 start_ts = int(time.time())
-filename = f"new_data_debianVM_{LABEL}_iperf3_{int(DURATION)}s.csv"
+filename = f"new_data_macbook_{LABEL}_iperf3_{int(DURATION)}s.csv"
 
 csvfile = open(filename, "w", newline="")
 writer  = csv.writer(csvfile)
