@@ -58,6 +58,26 @@ void init_map(int map_fd)
     printf("Map initialized with %d entries\n", i);
 }
 
+void pin_map_to_filesystem(int map_fd, const char* map_name) {
+    char pin_path[256];
+    
+    // Créer le répertoire /sys/fs/bpf si nécessaire
+    if (mkdir("/sys/fs/bpf", 0755) == -1 && errno != EEXIST) {
+        fprintf(stderr, "Warning: failed to create /sys/fs/bpf: %s\n", strerror(errno));
+    }
+    
+    snprintf(pin_path, sizeof(pin_path), "/sys/fs/bpf/%s", map_name);
+    
+    // Supprimer le fichier épinglé existant s'il existe
+    unlink(pin_path);
+    
+    if (bpf_obj_pin(map_fd, pin_path) < 0) {
+        fprintf(stderr, "Failed to pin map to %s: %s\n", pin_path, strerror(errno));
+    } else {
+        printf("✅ Map pinned to %s\n", pin_path);
+    }
+}
+
 void read_trace_pipe(void)
 {
     int trace_fd;
@@ -159,6 +179,8 @@ int main(int argc, char **argv)
     int key_cong_map_fd = bpf_map__fd(key_cong_map);
     
     init_map(key_cong_map_fd);
+
+    pin_map_to_filesystem(key_cong_map_fd, "key_cong_map");
     
     error = bpf_prog_attach(prog_fd, cg_fd, BPF_CGROUP_SOCK_OPS, 0);
     if (error) {
