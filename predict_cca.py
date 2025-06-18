@@ -12,8 +12,6 @@ import socket
 class ConnectionTuple(ctypes.Structure):
     _fields_ = [
         ("dst_ip", ctypes.c_uint32),
-        ("dst_port", ctypes.c_uint16),
-        ("src_port", ctypes.c_uint16)
     ]
 
 connection_id_str = None
@@ -46,26 +44,15 @@ def parse_connection_id_to_tuple(conn_str):
     instance de ConnectionTuple avec les valeurs en ordre réseau (network byte order).
     """
     try:
-        parts = conn_str.split(';')
-        if len(parts) != 3:
-            print(f"Format de connection_id invalide: {conn_str}")
-            return None
+        dst_ip_str = conn_str.strip()
 
-        dst_ip_str, dst_port_str, src_port_str = parts
-
-        # L'IP doit être en network byte order (big-endian).
-        # On retire la conversion en host byte order.
         dst_ip_nbo = int.from_bytes(socket.inet_aton(dst_ip_str), 'big')
 
-        # Les ports sont de simples entiers (host byte order)
-        dst_port_host = int(dst_port_str)
-        src_port_host = int(src_port_str)
+        
 
         # Crée et retourne l'instance de la structure ctypes
         return ConnectionTuple(
-            dst_ip=dst_ip_nbo,
-            dst_port=dst_port_host,
-            src_port=src_port_host
+            dst_ip=dst_ip_nbo
         )
     except Exception as e:
         print(f"Erreur lors de l'analyse de '{conn_str}': {e}")

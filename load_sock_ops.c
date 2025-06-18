@@ -42,8 +42,6 @@ void cleanup(int signo) {
 
 struct connection_tuple {
     __u32 dst_ip;
-    __u16 dst_port;
-    __u16 src_port;
 };
 
 void init_map(int map_fd)
@@ -57,7 +55,7 @@ struct {
         struct connection_tuple key;
         char value[16];
     } entries[] = {
-        {{ my_ip, my_dst_port, my_src_port }, "reno"},
+        {{ my_ip }, "reno"},
     };
     
     int i;

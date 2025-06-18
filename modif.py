@@ -18,7 +18,10 @@ df = pd.read_csv(filename)
 # df.loc[1072:1638, 'Label'] = 'Fibre'
 #df = df.drop(['mdev_max','rttvar','total_lost','total_retrans','rcv_buf','snd_buf', 'recv_rtt', 'sk_max_pacing_rate'], axis=1)
 #df = df.drop(['recv_rtt', 'sk_max_pacing_rate'], axis=1)
-df.loc[:, 'connection_id'] = '46.135.12.136;5001;5201'
+#df.loc[:, 'connection_id'] = '46.135.12.136'
+df['connection_id'] = df['connection_id'].str.split(';').str[0]
+
+
 # Sauvegarder directement dans le même fichier
 df.to_csv(filename, index=False)
 #print(f"Colonne 'Label' ajoutée avec la valeur 'Wi-Fi' pour {len(df)} lignes")

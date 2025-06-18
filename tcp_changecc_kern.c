@@ -13,8 +13,6 @@
 
 struct connection_tuple {
     __u32 dst_ip;
-    __u16 dst_port;
-    __u16 src_port;
 };
 
 
@@ -34,7 +32,7 @@ int bpf_basertt(struct bpf_sock_ops *skops)
     __u16 lport = (__u16)skops->local_port;
     __u32 ndip = (__u32)bpf_ntohl(skops->remote_ip4);
     
-    bpf_printk("ndip:%u dport :%u lport:%u\n", ndip, dport, lport);
+    bpf_printk("ndip:%u\n", ndip);
     
     switch (op)
     {
@@ -45,10 +43,8 @@ int bpf_basertt(struct bpf_sock_ops *skops)
 
         struct connection_tuple cc_id;
         cc_id.dst_ip = ndip;
-        cc_id.dst_port = dport;
-        cc_id.src_port = lport;
         
-        bpf_printk("cc_id: dst_ip=%u dst_port=%u src_port=%u", cc_id.dst_ip, cc_id.dst_port, cc_id.src_port);
+        bpf_printk("cc_id: dst_ip=%u", cc_id.dst_ip);
         
         char *con_str = bpf_map_lookup_elem(&key_cong_map, &cc_id);
         bpf_printk("constr: %s\n", con_str);

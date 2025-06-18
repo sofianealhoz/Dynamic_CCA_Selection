@@ -361,7 +361,7 @@ def clean_ipv6_mapped_addr(addr):
 def write_ipv4_to_csv(event):
     source_addr = inet_ntop(AF_INET, pack("I", event.saddr))
     dest_addr = inet_ntop(AF_INET, pack("I", event.daddr))
-    connection_id = f"{dest_addr};{event.dport};{event.lport}"
+    connection_id = f"{dest_addr}"
     
     writer.writerow([
         LABEL, connection_id, 
@@ -380,7 +380,7 @@ def write_ipv6_to_csv(event):
     source_addr = clean_ipv6_mapped_addr(source_addr)
     dest_addr = clean_ipv6_mapped_addr(dest_addr)
 
-    connection_id = f"{dest_addr};{event.dport};{event.lport}"
+    connection_id = f"{dest_addr}"
 
     
     writer.writerow([
