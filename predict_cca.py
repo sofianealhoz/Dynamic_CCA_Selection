@@ -53,12 +53,9 @@ def parse_connection_id_to_tuple(conn_str):
 
         dst_ip_str, dst_port_str, src_port_str = parts
 
-        # L'IP source est souvent l'IP locale. Pour cet exemple, nous utilisons 127.0.0.1.
-        # Adaptez si votre cas d'usage est différent.
-        # Les IPs doivent être des entiers en network byte order (big-endian).
-        # Convertit l'IP de string à entier en host byte order
+        # L'IP doit être en network byte order (big-endian).
+        # On retire la conversion en host byte order.
         dst_ip_nbo = int.from_bytes(socket.inet_aton(dst_ip_str), 'big')
-        dst_ip_host = socket.ntohl(dst_ip_nbo)
 
         # Les ports sont de simples entiers (host byte order)
         dst_port_host = int(dst_port_str)
@@ -66,7 +63,7 @@ def parse_connection_id_to_tuple(conn_str):
 
         # Crée et retourne l'instance de la structure ctypes
         return ConnectionTuple(
-            dst_ip=dst_ip_host,
+            dst_ip=dst_ip_nbo,
             dst_port=dst_port_host,
             src_port=src_port_host
         )

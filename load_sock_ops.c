@@ -18,6 +18,28 @@
 
 #define DEBUGFS "/sys/kernel/debug/tracing/"
 
+#include <signal.h>
+
+int cg_fd_global = -1;
+int prog_fd_global = -1;
+struct bpf_object *obj_global = NULL;
+char pin_path_global[256] = {0};
+
+void cleanup(int signo) {
+    if (cg_fd_global >= 0 && prog_fd_global >= 0) {
+        bpf_prog_detach2(prog_fd_global, cg_fd_global, BPF_CGROUP_SOCK_OPS);
+    }
+    if (pin_path_global[0]) {
+        unlink(pin_path_global);
+        printf("Unlinked pinned map: %s\n", pin_path_global);
+    }
+    if (obj_global) {
+        bpf_object__close(obj_global);
+    }
+    printf("Clean exit.\n");
+    exit(0);
+}
+
 struct connection_tuple {
     __u32 dst_ip;
     __u16 dst_port;
@@ -26,7 +48,8 @@ struct connection_tuple {
 
 void init_map(int map_fd)
 {
-    __u32 my_ip = 0xA0D97CC8;  // 160.217.124.200
+    
+    __u32 my_ip = 0xA0D97CC8;
     __u16 my_dst_port = 5001;
     __u16 my_src_port = 5201;
 
@@ -171,6 +194,13 @@ int main(int argc, char **argv)
     init_map(key_cong_map_fd);
 
     pin_map_to_filesystem(key_cong_map_fd, "key_cong_map");
+    
+    snprintf(pin_path_global, sizeof(pin_path_global), "/sys/fs/bpf/key_cong_map");
+    cg_fd_global = cg_fd;
+    prog_fd_global = prog_fd;
+    obj_global = obj;
+
+    signal(SIGINT, cleanup);
     
     error = bpf_prog_attach(prog_fd, cg_fd, BPF_CGROUP_SOCK_OPS, 0);
     if (error) {
