@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 import numpy as np 
 from sklearn.model_selection import StratifiedKFold
 
-df = pd.read_csv('new_data.csv')
+df = pd.read_csv('new_dataset2.csv')
 
 label_encoder = LabelEncoder()
 df['label_encoded'] = label_encoder.fit_transform(df['label'])
@@ -64,7 +64,7 @@ models = {
     'RandomForest': RandomForestClassifier(n_estimators=100, random_state=42),
     'XGBoost': XGBClassifier(random_state=42, eval_metric='logloss'),
     'SVM': SVC(kernel='rbf', random_state=42),
-    'MLP': MLPClassifier(hidden_layer_sizes=(100, 50), random_state=42)
+    'MLP': MLPClassifier(hidden_layer_sizes=(100, 50), random_state=42, max_iter = 500)
 }
 
 results = {}
@@ -135,14 +135,15 @@ print(f"Type de shap_values: {type(shap_values)}")
 print(f"Shape originale: {shap_values.shape}")
 
 # CONVERSION FORCÉE vers le format liste multi-classes
-if shap_values.shape == (sample_size, len(X.columns), 3):
+if shap_values.shape == (sample_size, len(X.columns), 4):
     print("🔄 Conversion vers format liste multi-classes...")
     
-    # Convertir (sample_size, features, 3) vers liste de 3 arrays (sample_size, features)
+    # Convertir (678, 12, 4) vers liste de 4 arrays (678, 12)
     shap_values_converted = [
-        shap_values[:, :, 0],  # Classe Fibre
-        shap_values[:, :, 1],  # Classe Mobile
-        shap_values[:, :, 2]   # Classe Wi-Fi
+        shap_values[:, :, 0],  # Classe datacenter
+        shap_values[:, :, 1],  # Classe fibre
+        shap_values[:, :, 2],  # Classe mobile
+        shap_values[:, :, 3]   # Classe wi-fi
     ]
     
     # Remplacer la variable originale
@@ -154,7 +155,7 @@ if shap_values.shape == (sample_size, len(X.columns), 3):
     print(f"Shape de chaque classe: {[sv.shape for sv in shap_values]}")
 
 # Analyse SHAP
-if isinstance(shap_values, list) and len(shap_values) == 3:
+if isinstance(shap_values, list) and len(shap_values) == 4:
     print("✅ Structure SHAP correcte détectée")
     
     # 1. Summary plot global
@@ -163,12 +164,12 @@ if isinstance(shap_values, list) and len(shap_values) == 3:
                      class_names=label_encoder.classes_, show=False)
     plt.title("SHAP Summary Plot - Importance des features par classe")
     plt.tight_layout()
-    plt.savefig('shap_summary_plot.png', dpi=150, bbox_inches='tight')
+    plt.savefig('shap_summary_plot2.png', dpi=150, bbox_inches='tight')
     plt.close()
     
     # 2. Importance globale
     plt.figure(figsize=(12, 8))
-    global_importance = np.mean([np.abs(shap_values[i]).mean(axis=0) for i in range(3)], axis=0)
+    global_importance = np.mean([np.abs(shap_values[i]).mean(axis=0) for i in range(4)], axis=0)
     
     feature_importance_df = pd.DataFrame({
         'feature': X.columns,
@@ -179,7 +180,7 @@ if isinstance(shap_values, list) and len(shap_values) == 3:
     plt.title("Importance Globale des Features TCP (SHAP)")
     plt.xlabel("Importance SHAP moyenne")
     plt.tight_layout()
-    plt.savefig('shap_feature_importance.png', dpi=150, bbox_inches='tight')
+    plt.savefig('shap_feature_importance2.png', dpi=150, bbox_inches='tight')
     plt.close()
     
     # 3. Analyse par classe
