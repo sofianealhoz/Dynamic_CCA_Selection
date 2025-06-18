@@ -19,32 +19,22 @@
 #define DEBUGFS "/sys/kernel/debug/tracing/"
 
 struct connection_tuple {
-    __u32 src_ip;
     __u32 dst_ip;
-    __u16 src_port;
     __u16 dst_port;
+    __u16 src_port;
 };
 
 void init_map(int map_fd)
 {
-    __u32 common_ip = 0x7F000001;  // 127.0.0.1
-    __u16 common_src_port = 5001;
-    
-    struct {
+    __u32 my_ip = 0xA0D97CC8;  // 160.217.124.200
+    __u16 my_dst_port = 5001;
+    __u16 my_src_port = 5201;
+
+struct {
         struct connection_tuple key;
         char value[16];
     } entries[] = {
-        {{ common_ip, common_ip, common_src_port, 0 }, "reno"},
-        {{ common_ip, common_ip, common_src_port, 5004 }, "cubic"},
-        {{ common_ip, common_ip, common_src_port, 5005 }, "illinois"},
-        {{ common_ip, common_ip, common_src_port, 5006 }, "vegas"},
-        {{ common_ip, common_ip, common_src_port, 5007 }, "bbr"},
-        {{ common_ip, common_ip, common_src_port, 5008 }, "westwood"},
-        {{ common_ip, common_ip, common_src_port, 5009 }, "highspeed"},
-        {{ common_ip, common_ip, common_src_port, 5010 }, "hybla"},
-        {{ common_ip, common_ip, common_src_port, 5011 }, "scalable"},
-        {{ common_ip, common_ip, common_src_port, 5012 }, "yeah"},
-        {{ common_ip, common_ip, common_src_port, 5013 }, "dctcp"},
+        {{ my_ip, my_dst_port, my_src_port }, "reno"},
     };
     
     int i;
