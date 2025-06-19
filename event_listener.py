@@ -36,7 +36,7 @@ def trigger_analysis(dst_ip_str):
         # Étape A: Collecter les données avec get_socket_data.py
         print(f"1. Lancement de la collecte de données pour {dst_ip_str}...")
         subprocess.run(
-            ["python3", "get_socket_data.py", "unknown", dst_ip_str],
+            ["python3", "get_socket_data.py", "unknown"],
             check=True, timeout=20
         )
         print("   Collecte terminée.")
