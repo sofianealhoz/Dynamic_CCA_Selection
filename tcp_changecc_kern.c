@@ -15,6 +15,11 @@ struct connection_tuple {
     __u32 dst_ip;
 };
 
+struct connection_event {
+    __u32 dst_ip;
+    __u16 src_port;
+    __u16 dst_port;
+};
 
 struct {
     __uint(type, BPF_MAP_TYPE_HASH);
@@ -23,6 +28,12 @@ struct {
     __type(key, struct connection_tuple);
     __type(value, char[16]);  
 } key_cong_map SEC(".maps");
+
+struct {
+    __uint(type, BPF_MAP_TYPE_PERF_EVENT_ARRAY);
+    __uint(key_size, sizeof(__u32));
+    __uint(value_size, sizeof(__u32));
+} connection_events SEC(".maps");
 
 SEC("sockops")
 int bpf_basertt(struct bpf_sock_ops *skops)
@@ -49,19 +60,29 @@ int bpf_basertt(struct bpf_sock_ops *skops)
         char *con_str = bpf_map_lookup_elem(&key_cong_map, &cc_id);
         bpf_printk("constr: %s\n", con_str);
         
-        char cong[20];
-        bpf_getsockopt(skops, SOL_TCP, TCP_CONGESTION, cong, sizeof(cong));
-        bpf_printk("before cc:%s\n", cong);
 
-        if (con_str == NULL)
-        {
-            return 1;
+
+        if (con_str != NULL) {
+            char cong[20];
+            bpf_getsockopt(skops, SOL_TCP, TCP_CONGESTION, cong, sizeof(cong));
+            bpf_printk("before cc:%s\n", cong);
+            bpf_setsockopt(skops, SOL_TCP, TCP_CONGESTION, con_str, 16);
+            bpf_getsockopt(skops, SOL_TCP, TCP_CONGESTION, cong, sizeof(cong));
+            bpf_printk("after cc:%s\n", cong);
+            break;
+
+        } else {
+            bpf_printk("No rule, sending event to collect", ndip);
+
+            // Étape 5: On sonne la cloche
+            struct connection_event event = {};
+            event.dst_ip = ndip;
+            event.src_port = skops->local_port;
+            event.dst_port = bpf_ntohl(skops->remote_port);
+
+            bpf_perf_event_output(skops, &connection_events, BPF_F_CURRENT_CPU, &event, sizeof(event));
         }
-        
-        bpf_setsockopt(skops, SOL_TCP, TCP_CONGESTION, con_str, 16);
-        bpf_getsockopt(skops, SOL_TCP, TCP_CONGESTION, cong, sizeof(cong));
-        bpf_printk("after cc:%s\n", cong);
-        break;
+
     }
     
     int rv = 0;
