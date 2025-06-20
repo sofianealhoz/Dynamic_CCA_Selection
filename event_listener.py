@@ -79,4 +79,15 @@ def handle_event(cpu, data, size):
 try:
     b["conn_events"].open_perf_buffer(handle_event)
 except Exception as e:
-    print(f"Erreur lors de l'ouverture du buffer d'événements
+    print(f"Erreur lors de l'ouverture du buffer d'événements: {e}")
+    print("Assurez-vous que 'load_sock_ops' est lancé et a épinglé la map 'conn_events'.")
+    sys.exit(1)
+
+print("👂 En attente d'événements... Lancez du trafic réseau.")
+
+# 4. Boucle principale pour écouter les événements.
+try:
+    while True:
+        b.perf_buffer_poll()
+except KeyboardInterrupt:
+    print("\n🛑 Arrêt de l'écouteur...")
