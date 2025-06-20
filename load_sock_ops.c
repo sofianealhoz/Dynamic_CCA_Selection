@@ -190,17 +190,17 @@ int main(int argc, char **argv)
     int key_cong_map_fd = bpf_map__fd(key_cong_map);
     
     init_map(key_cong_map_fd);
-
     pin_map_to_filesystem(key_cong_map_fd, "key_cong_map");
     
-    struct bpf_map *events_map = bpf_object__find_map_by_name(obj, "connection_events");
+    // On garde UNIQUEMENT le bloc pour "conn_events"
+    struct bpf_map *events_map = bpf_object__find_map_by_name(obj, "conn_events");
     if (!events_map) {
-        printf("ERROR: could not find map 'connection_events'\n");
+        printf("ERREUR: Impossible de trouver la map 'conn_events'\n");
         bpf_object__close(obj);
-        return 4;
+        return 1;
     }
     int events_map_fd = bpf_map__fd(events_map);
-    pin_map_to_filesystem(events_map_fd, "connection_events"); // Épingler la map d'événements
+    pin_map_to_filesystem(events_map_fd, "conn_events");
 
     snprintf(pin_path_global, sizeof(pin_path_global), "/sys/fs/bpf/key_cong_map");
     cg_fd_global = cg_fd;

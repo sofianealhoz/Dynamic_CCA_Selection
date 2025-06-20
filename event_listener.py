@@ -11,13 +11,22 @@ if os.geteuid() != 0:
     print("Ce script doit être lancé avec sudo.")
     sys.exit(1)
 
+BPF_OBJECT_FILE = "/home/salhoz/v2/bbr/samples/bpf"
+
 # Définir la structure de l'événement pour qu'elle corresponde à celle en C
 class ConnectionEvent(ct.Structure):
     _fields_ = [
         ("dst_ip", ct.c_uint32),
-        ("src_port", ct.c_uint16),
-        ("dst_port", ct.c_uint16),
     ]
+
+# Charger l'objet BPF.
+# Nous ne l'attachons pas, nous le chargeons juste pour accéder aux maps.
+try:
+    b = BPF(obj=BPF_OBJECT_FILE)
+except Exception as e:
+    print(f"Erreur lors du chargement de {BPF_OBJECT_FILE}: {e}")
+    print("Assurez-vous d'avoir compilé avec 'make'.")
+    sys.exit(1)
 
 processed_ips = set()
 
@@ -68,20 +77,6 @@ def handle_event(cpu, data, size):
 
 # S'attacher à la map d'événements qui a été épinglée par load_sock_ops
 try:
-    event_map = BPF.get_pinned_map(b"/sys/fs/bpf/connection_events")
+    b["conn_events"].open_perf_buffer(handle_event)
 except Exception as e:
-    print("Erreur: Impossible de trouver la map d'événements épinglée.")
-    print("Assurez-vous que 'sudo ./load_sock_ops' est en cours d'exécution dans un autre terminal.")
-    sys.exit(1)
-
-# Ouvrir le canal d'événements et lier la fonction de callback
-event_map.open_perf_buffer(handle_event)
-print("👂 En attente d'événements du noyau... Lancez du trafic réseau.")
-print("   Appuyez sur Ctrl+C pour arrêter.")
-
-# Boucle principale pour écouter les événements
-try:
-    while True:
-        event_map.perf_buffer_poll()
-except KeyboardInterrupt:
-    print("\n🛑 Arrêt de l'écouteur.")
+    print(f"Erreur lors de l'ouverture du buffer d'événements
