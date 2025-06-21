@@ -55,7 +55,7 @@ def parse_connection_id_to_tuple(conn_str):
             dst_ip=dst_ip_nbo
         )
     except Exception as e:
-        print(f"Erreur lors de l'analyse de '{conn_str}': {e}")
+        print(f"Error analysing '{conn_str}': {e}")
         return None
 
 def update_pinned_map(connection_prediction):
@@ -63,7 +63,7 @@ def update_pinned_map(connection_prediction):
 
     global connection_id_str
     if not connection_id_str:
-        print("Erreur: connection_id_str n'est pas défini.")
+        print("Error: connection_id_str is not defined.")
         return
 
     connection_key = parse_connection_id_to_tuple(connection_id_str)
@@ -93,14 +93,14 @@ def update_pinned_map(connection_prediction):
         map_fd = libbpf.bpf_obj_get(map_path)
         
         if map_fd >= 0:
-            print(f"Mise à jour de la map pour la clé {connection_key} avec CCA: {recommended_cca}")
+            print(f"Updating the map for the key {connection_key} with CCA: {recommended_cca}")
             update_bpf_map(map_fd, connection_key, recommended_cca)
         else:
             errno = ctypes.get_errno()
-            print(f"Erreur: Impossible de trouver la map BPF à {map_path.decode()}: {os.strerror(errno)}")
+            print(f"Erreur: Impossible to find the BPF map at {map_path.decode()}: {os.strerror(errno)}")
             
     except Exception as e:
-        print(f"Erreur lors de l'accès à la map épinglée: {e}")
+        print(f"Error accessing the pinned map: {e}")
     finally:
         if map_fd >= 0:
             os.close(map_fd)
@@ -127,14 +127,14 @@ def update_bpf_map(map_fd, key_struct, cca_algo):
         )
         
         if ret == 0:
-            print(f"✅ Map mise à jour: {key_struct} -> {cca_algo}")
+            print(f"✅ Map updated: {key_struct} -> {cca_algo}")
             return True
         else:
             errno = ctypes.get_errno()
-            print(f"❌ Échec mise à jour map: code {ret}, errno: {errno} ({os.strerror(errno)})")
+            print(f"❌ Error updating the map: code {ret}, errno: {errno} ({os.strerror(errno)})")
             return False
     except Exception as e:
-        print(f"Erreur dans update_bpf_map: {e}")
+        print(f"Error during update_bpf_map: {e}")
         return False
 
 predictions = load_and_predict('data_prod.csv')
