@@ -19,10 +19,7 @@ struct connection_tuple {
     __u32 dst_ip; // Doit être en network byte order
 };
 
-// Structure d'événement simplifiée, juste l'IP
-struct connection_event {
-    __u32 dst_ip; // Doit être en network byte order
-};
+
 
 struct {
     __uint(type, BPF_MAP_TYPE_HASH);
@@ -32,16 +29,7 @@ struct {
     __type(value, char[16]);
 } key_cong_map SEC(".maps");
 
-// --- MODIFICATION ---
-// Remplacer la macro BPF_PERF_OUTPUT par une définition manuelle.
-// C'est la méthode C standard pour déclarer une map.
-struct {
-    __uint(type, BPF_MAP_TYPE_PERF_EVENT_ARRAY);
-    __uint(key_size, sizeof(__u32));
-    __uint(value_size, sizeof(__u32));
-    __uint(max_entries, 1024); // Nombre max de CPUs, 1024 est une valeur sûre
-} conn_events SEC(".maps");
-// --- FIN MODIFICATION ---
+
 
 
 SEC("sockops")
@@ -66,16 +54,9 @@ int bpf_basertt(struct bpf_sock_ops *skops)
             bpf_printk("Rule found for %u, setting CCA to %s\n", remote_ip_nbo, con_str);
             bpf_setsockopt(skops, SOL_TCP, TCP_CONGESTION, con_str, 16);
         } else {
-            bpf_printk("No rule for %u, sending event to userspace\n", remote_ip_nbo);
+            bpf_printk("No rule for %u\n", remote_ip_nbo);
 
-            // Remplir et envoyer UN SEUL événement
-            struct connection_event event = {};
-            event.dst_ip = remote_ip_nbo; // Utiliser l'IP en network byte order
 
-            // --- MODIFICATION ---
-            // Remplacer l'appel conn_events.perf_submit(...) par la fonction BPF standard.
-            bpf_perf_event_output(skops, &conn_events, BPF_F_CURRENT_CPU, &event, sizeof(event));
-            // --- FIN MODIFICATION ---
         }
         break;
     }

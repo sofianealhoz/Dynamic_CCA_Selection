@@ -79,11 +79,10 @@ processed_ips = set()
 analysis_in_progress = False
 
 def trigger_analysis(dst_ip_str):
-    """Lance la séquence d'analyse pour une IP donnée."""
     global analysis_in_progress
     
     if analysis_in_progress:
-        print(f"Analyse déjà en cours, ignorant {dst_ip_str}")
+        print(f"Already proccessing, skiping: {dst_ip_str}")
         return
         
     if dst_ip_str in processed_ips:
@@ -93,32 +92,32 @@ def trigger_analysis(dst_ip_str):
     processed_ips.add(dst_ip_str)
     analysis_in_progress = True
     
-    print(f"\n--- Début de l'analyse pour l'IP: {dst_ip_str} ---")
+    print(f"\n--- Process start for: {dst_ip_str} ---")
 
     try:
-        print(f"1. Lancement de la collecte de données pour {dst_ip_str}...")
+        print(f"1. Launching get_socket_data.py for: {dst_ip_str}")
         subprocess.run(
             ["python3", "get_socket_data.py", "unknown"],
             check=True, timeout=20
         )
-        print("   Collecte terminée.")
+        print("   Collection finished.")
 
-        print("2. Modification du dataset...")
+        print("2. Launching modif.py")
         subprocess.run(
             ["python3", "modif.py", "data_prod.csv"],
             check=True, timeout=20
         )
-        print("   Modification terminée.")
+        print("   Modification finished.")
 
-        print("3. Lancement de la prédiction...")
+        print("3. Launching predict_cca.py")
         subprocess.run(
             ["python3", "predict_cca.py"],
             check=True, timeout=10
         )
-        print(f"--- ✅ Analyse pour {dst_ip_str} terminée ---")
+        print(f"--- ✅ Prediction for: {dst_ip_str} terminated ---")
 
     except Exception as e:
-        print(f"   ❌ Une erreur est survenue durant l'analyse: {e}")
+        print(f"   ❌ An error occured durung the process: {e}")
     finally:
         analysis_in_progress = False
 
@@ -126,10 +125,10 @@ def handle_ipv4_event(cpu, data, size):
     try:
         event = ct.cast(data, ct.POINTER(IPv4Event)).contents
         dst_ip = inet_ntop(AF_INET, pack("I", event.daddr))
-        print(f"Événement IPv4 reçu pour IP: {dst_ip}")
+        print(f"IPv4 event received: {dst_ip}")
         trigger_analysis(dst_ip)
     except Exception as e:
-        print(f"Erreur lors du traitement IPv4: {e}")
+        print(f"Error during handle_ipv4_event: {e}")
 
 def handle_ipv6_event(cpu, data, size):
     try:
@@ -139,20 +138,20 @@ def handle_ipv6_event(cpu, data, size):
         #print(f"Événement IPv6 reçu pour IP: {dst_ip}")
         trigger_analysis(dst_ip)
     except Exception as e:
-        print(f"Erreur lors du traitement IPv6: {e}")
+        print(f"Error during handle_ipv6_event: {e}")
 
 # initialize BPF
-print("Initialisation du programme BPF...")
+print("Initialising BPF program")
 b = BPF(text=bpf_text)
 b.attach_kprobe(event="tcp_ack", fn_name="trace_ack")
 b["ipv4_events"].open_perf_buffer(handle_ipv4_event, page_cnt=64)
 b["ipv6_events"].open_perf_buffer(handle_ipv6_event, page_cnt=64)
 
-print("En attente d'événements TCP...")
+print("Waiting for TCP events on port 5201")
 
 try:
     while True:
         b.perf_buffer_poll(timeout=0)
         
 except KeyboardInterrupt:
-    print("\nInterrompu par l'utilisateur.")
+    print("\nKeyboard interruption by the user, exiting...")
