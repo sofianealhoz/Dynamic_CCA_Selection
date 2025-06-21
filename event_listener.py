@@ -12,6 +12,7 @@ import sys
 
 import socket
 import subprocess
+from socket import inet_ntop, AF_INET
 
 
 
@@ -87,8 +88,10 @@ def trigger_analysis(dst_ip_str):
         processed_ips.discard(dst_ip_str)
 
 def handle_ack_event(cpu, data, size):
-    # Pas besoin de lire les données, juste déclencher l'analyse
-    trigger_analysis("unknown_ip")  # ou une IP par défaut
+    # Lire l'événement et extraire l'IP
+    event = b["ack_events"].event(data)
+    dst_ip = inet_ntop(AF_INET, pack("I", event.daddr))
+    trigger_analysis(dst_ip)
 
 # initialize BPF
 b = BPF(text=bpf_text)
