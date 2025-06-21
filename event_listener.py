@@ -25,7 +25,7 @@ bpf_text = """
 #include <net/tcp.h>
 
 struct ack_event_t {
-    u32 daddr;
+    unsigned __int128 daddr;
 };
 
 BPF_PERF_OUTPUT(ack_events);
