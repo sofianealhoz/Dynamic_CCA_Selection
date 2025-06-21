@@ -55,6 +55,17 @@ int trace_ack(struct pt_regs *ctx, struct sock *sk)
 }
 """
 
+class Data_ipv6(ct.Structure):
+    _fields_ = [
+        ("daddr", (ct.c_ulonglong * 2))
+    ]
+
+
+def clean_ipv6_mapped_addr(addr):
+    if addr.startswith("::ffff:"):
+        return addr[7:]  
+    return addr
+
 processed_ips = set()
 
 def trigger_analysis(dst_ip_str):
@@ -96,7 +107,10 @@ def trigger_analysis(dst_ip_str):
 def handle_ack_event(cpu, data, size):
     # Lire l'événement et extraire l'IP
     event = b["ack_events"].event(data)
+    event = ct.cast(data, ct.POINTER(Data_ipv6)).contents
     dst_ip = inet_ntop(AF_INET6, event.daddr)
+    dest_addr = clean_ipv6_mapped_addr(dest_addr)
+
     trigger_analysis(dst_ip)
 
 # initialize BPF
