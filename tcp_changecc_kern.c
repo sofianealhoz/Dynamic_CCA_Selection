@@ -77,4 +77,10 @@ int bpf_basertt(struct bpf_sock_ops *skops)
             bpf_perf_event_output(skops, &conn_events, BPF_F_CURRENT_CPU, &event, sizeof(event));
             // --- FIN MODIFICATION ---
         }
-        break
+        break;
+    }
+
+    return 1;
+}
+
+char _license[] SEC("license") = "GPL";
