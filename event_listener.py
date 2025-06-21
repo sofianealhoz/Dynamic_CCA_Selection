@@ -11,7 +11,7 @@ if os.geteuid() != 0:
     print("Ce script doit être lancé avec sudo.")
     sys.exit(1)
 
-BPF_OBJECT_FILE = "/home/salhoz/v2/bbr/samples/bpf"
+BPF_OBJECT_FILE = "/home/salhoz/v2/bbr/samples/bpf/tcp_changecc_kern.o"
 
 # Définir la structure de l'événement pour qu'elle corresponde à celle en C
 class ConnectionEvent(ct.Structure):
