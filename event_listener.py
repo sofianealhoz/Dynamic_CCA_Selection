@@ -66,12 +66,18 @@ def trigger_analysis(dst_ip_str):
 
     try:
         print(f"1. Lancement de la collecte de données pour {dst_ip_str}...")
-        # CORRECTION: On passe l'IP au script get_socket_data.py
         subprocess.run(
             ["python3", "get_socket_data.py", "unknown"],
             check=True, timeout=20
         )
         print("   Collecte terminée.")
+
+        print("modifying dataset")
+        subprocess.run(
+            ["python3", "modif.py", "data_prod.csv"],
+            check=True, timeout=20
+        )
+        print("   modification finished.")
 
         print("2. Lancement de la prédiction...")
         subprocess.run(
