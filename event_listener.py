@@ -1,36 +1,58 @@
-import ctypes as ct
+#!/usr/libexec/platform-python
+
 from bcc import BPF
+import time
+from struct import pack
+import ctypes as ct
+import csv
+import os
+import ipaddress
+import sys
+
+
 import socket
 import subprocess
-import time
-import sys
-import os
 
-# S'assurer que le script est lancé avec sudo
-if os.geteuid() != 0:
-    print("Ce script doit être lancé avec sudo.")
-    sys.exit(1)
 
-# 1. Définir un programme BPF minimaliste.
-#    Son seul but est de déclarer une map avec le même nom que celle dans le noyau.
+
+# define BPF program
 bpf_text = """
-BPF_PERF_OUTPUT(conn_events);
+#include <uapi/linux/ptrace.h>
+#include <net/sock.h>
+#include <bcc/proto.h>
+#include <linux/tcp.h>
+#include <net/tcp.h>
+
+struct ack_event_t {
+    u32 daddr;
+};
+
+BPF_PERF_OUTPUT(ack_events);
+
+static int trace_event(struct pt_regs *ctx, struct sock *skp)
+{
+    if (skp == NULL)
+        return 0;
+    u32 pid = bpf_get_current_pid_tgid() >> 32;
+    if (skp->__sk_common.skc_num != 5201)
+    {
+        return 0;
+    }
+
+    // Envoyer un simple signal
+    struct ack_event_t event = {};
+    event.daddr = skp->__sk_common.skc_daddr;
+    ack_events.perf_submit(ctx, &event, sizeof(event));
+    
+    return 0;
+}
+
+int trace_ack(struct pt_regs *ctx, struct sock *sk)
+{
+    trace_event(ctx, sk);
+    return 0;
+}
 """
-
-# 2. Définir la structure de l'événement en Python.
-#    Elle doit correspondre à celle envoyée par tcp_changecc_kern.c pour lire le buffer.
-class ConnectionEvent(ct.Structure):
-    _fields_ = [
-        ("dst_ip", ct.c_uint32),
-    ]
-
-# 3. Charger notre mini-programme BPF.
-#    BCC va créer un handle Python pour la map "conn_events".
-try:
-    b = BPF(text=bpf_text)
-except Exception as e:
-    print(f"Erreur lors de l'initialisation de BPF: {e}")
-    sys.exit(1)
 
 processed_ips = set()
 
@@ -46,7 +68,7 @@ def trigger_analysis(dst_ip_str):
         print(f"1. Lancement de la collecte de données pour {dst_ip_str}...")
         # CORRECTION: On passe l'IP au script get_socket_data.py
         subprocess.run(
-            ["python3", "get_socket_data.py", "unknown", dst_ip_str],
+            ["python3", "get_socket_data.py", "unknown"],
             check=True, timeout=20
         )
         print("   Collecte terminée.")
@@ -64,31 +86,20 @@ def trigger_analysis(dst_ip_str):
         time.sleep(30)
         processed_ips.discard(dst_ip_str)
 
-def handle_event(cpu, data, size):
-    """Callback appelé chaque fois qu'un événement arrive."""
-    # Même si nous voulons juste un "signal", nous devons lire les données
-    # pour que le buffer soit vidé correctement.
-    event = ct.cast(data, ct.POINTER(ConnectionEvent)).contents
-    dst_ip_str = socket.inet_ntoa(event.dst_ip.to_bytes(4, 'little'))
-    
-    print(f"🔔 Signal reçu pour la connexion vers: {dst_ip_str}")
-    trigger_analysis(dst_ip_str)
+def handle_ack_event(cpu, data, size):
+    # Pas besoin de lire les données, juste déclencher l'analyse
+    trigger_analysis("unknown_ip")  # ou une IP par défaut
 
-# 4. S'attacher au buffer de performance.
-#    BCC va utiliser le handle qu'il a créé pour s'attacher à la map
-#    existante dans le noyau.
-try:
-    b["conn_events"].open_perf_buffer(handle_event)
-except Exception as e:
-    print(f"Erreur lors de l'ouverture du buffer d'événements: {e}")
-    print("Assurez-vous que 'sudo ./load_sock_ops' est en cours d'exécution.")
-    sys.exit(1)
+# initialize BPF
+b = BPF(text=bpf_text)
+b.attach_kprobe(event="tcp_ack", fn_name="trace_ack")
+b["ack_events"].open_perf_buffer(handle_ack_event, page_cnt=64)
 
-print("👂 En attente de signaux... Lancez du trafic réseau.")
 
-# 5. Boucle principale pour écouter les signaux.
+
 try:
     while True:
-        b.perf_buffer_poll()
+        b.perf_buffer_poll(timeout=100)
+        
 except KeyboardInterrupt:
-    print("\n🛑 Arrêt de l'écouteur...")
+    print("Interrupted by user.")
