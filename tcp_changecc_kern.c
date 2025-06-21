@@ -9,6 +9,10 @@
 #include <bpf/bpf_helpers.h>
 #include <bpf/bpf_endian.h>
 
+// --- SUPPRESSION ---
+// On enlève l'include qui pose problème
+// #include <bcc/proto.h>
+
 #define DEBUG 1
 
 struct connection_tuple {
@@ -28,8 +32,17 @@ struct {
     __type(value, char[16]);
 } key_cong_map SEC(".maps");
 
-// On garde UNIQUEMENT la map de type BPF_PERF_OUTPUT
-BPF_PERF_OUTPUT(conn_events);
+// --- MODIFICATION ---
+// Remplacer la macro BPF_PERF_OUTPUT par une définition manuelle.
+// C'est la méthode C standard pour déclarer une map.
+struct {
+    __uint(type, BPF_MAP_TYPE_PERF_EVENT_ARRAY);
+    __uint(key_size, sizeof(__u32));
+    __uint(value_size, sizeof(__u32));
+    __uint(max_entries, 1024); // Nombre max de CPUs, 1024 est une valeur sûre
+} conn_events SEC(".maps");
+// --- FIN MODIFICATION ---
+
 
 SEC("sockops")
 int bpf_basertt(struct bpf_sock_ops *skops)
@@ -59,13 +72,9 @@ int bpf_basertt(struct bpf_sock_ops *skops)
             struct connection_event event = {};
             event.dst_ip = remote_ip_nbo; // Utiliser l'IP en network byte order
 
-            // Envoyer l'événement sur le SEUL canal "conn_events"
-            conn_events.perf_submit(skops, &event, sizeof(event));
+            // --- MODIFICATION ---
+            // Remplacer l'appel conn_events.perf_submit(...) par la fonction BPF standard.
+            bpf_perf_event_output(skops, &conn_events, BPF_F_CURRENT_CPU, &event, sizeof(event));
+            // --- FIN MODIFICATION ---
         }
-        break; // Ajout du break manquant
-    }
-
-    return 1; // Retourner 1 pour indiquer que le skops a été traité
-}
-
-char _license[] SEC("license") = "GPL";
+        break
