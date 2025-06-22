@@ -322,24 +322,19 @@ state[3] = 'recovery'
 state[4] = 'loss'
 
 LABEL = sys.argv[1]
+ip = sys.argv[2] if len(sys.argv) > 2 else None
 DURATION = 15.0 
 
 start_ts = int(time.time())
 #filename = f"new_data_macbook_{LABEL}_iperf3_{int(DURATION)}s.csv"
-filename = "data_prod.csv"
 
-csvfile = open(filename, "w", newline="")
-writer  = csv.writer(csvfile)
-writer.writerow([
-    "label","connection_id",
-    "srtt", "rtt", "mdev", "mdev_max", "rttvar", "min_rtt",
-    "inflight", "lost", "recv_rtt", "retrans_out",
-    "total_lost", "sack_out", "total_retrans",
-    "rcv_buf", "snd_buf", "snd_cwnd",
-    "sk_pacing_rate", "sk_max_pacing_rate",
-    "delivered"
-])
 
+ipv4_samples = []
+ipv6_samples = []
+
+# Global variables to store all samples
+all_ipv4_samples = []
+all_ipv6_samples = []
 last_ipv4_sample = None
 last_ipv6_sample = None
 
@@ -358,95 +353,90 @@ def clean_ipv6_mapped_addr(addr):
         return addr[7:]  
     return addr
 
-def write_ipv4_to_csv(event):
-    source_addr = inet_ntop(AF_INET, pack("I", event.saddr))
-    dest_addr = inet_ntop(AF_INET, pack("I", event.daddr))
-    connection_id = f"{dest_addr}"
+def get_stored_samples():
+    """Return all stored samples"""
+    return {
+        'ipv4': all_ipv4_samples.copy(),
+        'ipv6': all_ipv6_samples.copy()
+    }
+
+def clear_stored_samples():
+    """Clear all stored samples"""
+    global all_ipv4_samples, all_ipv6_samples
+    all_ipv4_samples.clear()
+    all_ipv6_samples.clear()
+
+def start_collection(duration=15.0, sample_interval=0.1):
+    """Start collecting TCP data for specified duration"""
+    global all_ipv4_samples, all_ipv6_samples, last_ipv4_sample, last_ipv6_sample
     
-    writer.writerow([
-        LABEL, connection_id, 
-        event.srtt, event.rtt, event.mdev, event.mdev_max, event.rttvar, event.min_rtt,
-        event.inflight, event.lost, event.recv_rtt, event.retrans_out,
-        event.total_lost, event.sack_out, event.total_retrans,
-        event.rcv_buf, event.snd_buf, event.snd_cwnd,
-        event.sk_pacing_rate, event.sk_max_pacing_rate,
-        event.delivered
-    ])
-
-def write_ipv6_to_csv(event):
-    source_addr = inet_ntop(AF_INET6, event.saddr)
-    dest_addr = inet_ntop(AF_INET6, event.daddr)
+    # Clear previous data
+    clear_stored_samples()
     
-    source_addr = clean_ipv6_mapped_addr(source_addr)
-    dest_addr = clean_ipv6_mapped_addr(dest_addr)
+    # Initialize BPF
+    b = BPF(text=bpf_text)
+    b.attach_kprobe(event="tcp_ack", fn_name="trace_ack")
+    b["ipv4_events"].open_perf_buffer(store_ipv4_event, page_cnt=256)
+    b["ipv6_events"].open_perf_buffer(store_ipv6_event, page_cnt=256)
 
-    connection_id = f"{dest_addr}"
+    start_ts = time.time()
+    last_sample_time = time.time()
+    end_time = start_ts + duration
+    sample_count = 0
 
-    
-    writer.writerow([
-        LABEL, connection_id,
-        event.srtt, event.rtt, event.mdev, event.mdev_max, event.rttvar, event.min_rtt,
-        event.inflight, event.lost, event.recv_rtt, event.retrans_out,
-        event.total_lost, event.sack_out, event.total_retrans,
-        event.rcv_buf, event.snd_buf, event.snd_cwnd,
-        event.sk_pacing_rate, event.sk_max_pacing_rate,
-        event.delivered
-    ])
+    print(f"Start sampling: every {sample_interval*1000:.0f}ms")
+    print(f"Expected: {int(duration/sample_interval)} samples for {duration:.0f} seconds")
 
-# initialize BPF
-b = BPF(text=bpf_text)
-b.attach_kprobe(event="tcp_ack", fn_name="trace_ack")
-b["ipv4_events"].open_perf_buffer(store_ipv4_event, page_cnt=256)
-b["ipv6_events"].open_perf_buffer(store_ipv6_event, page_cnt=256)
-
-# constant storage
-sample_interval = 0.1  # 0.1s = 100ms
-last_sample_time = time.time()
-end_time = start_ts + DURATION
-sample_count = 0  # to verify how many samples we collect
-
-print(f"Start sampling: every {sample_interval*1000:.0f}ms")
-print(f"Expected: {int(DURATION/sample_interval)} sampels for {DURATION:.0f} secondes")
-
-try:
-    while time.time() < end_time:
-        current_time = time.time()
-        
-        # (every 100ms) Poll the perf buffer
-        if current_time - last_sample_time >= sample_interval:
-            # Read all events from the buffer (to clear it and avoid overflow)
-            # but the callbacks only store the last event
-            b.perf_buffer_poll(timeout=0)
+    try:
+        while time.time() < end_time:
+            current_time = time.time()
             
-            if last_ipv4_sample:
-                write_ipv4_to_csv(last_ipv4_sample)
-                sample_count += 1
-                last_ipv4_sample = None  # Reset after writing
-            
-            if last_ipv6_sample:
-                write_ipv6_to_csv(last_ipv6_sample)
-                sample_count += 1
-                last_ipv6_sample = None  # Reset after writing
+            if current_time - last_sample_time >= sample_interval:
+                b.perf_buffer_poll(timeout=0)
                 
-            last_sample_time = current_time
-            
-        else:
-            # Wait intelligently until the next sample
-            time_to_next_sample = sample_interval - (current_time - last_sample_time)
-            sleep_time = min(time_to_next_sample, 0.01)  # 10ms sleep max
-            if sleep_time > 0:
-                time.sleep(sleep_time)
+                if last_ipv4_sample:
+                    # Create a copy to store
+                    sample_copy = type(last_ipv4_sample)()
+                    ct.memmove(ct.addressof(sample_copy), ct.addressof(last_ipv4_sample), ct.sizeof(last_ipv4_sample))
+                    all_ipv4_samples.append(sample_copy)
+                    sample_count += 1
+                    last_ipv4_sample = None
+                
+                if last_ipv6_sample:
+                    # Create a copy to store
+                    sample_copy = type(last_ipv6_sample)()
+                    ct.memmove(ct.addressof(sample_copy), ct.addressof(last_ipv6_sample), ct.sizeof(last_ipv6_sample))
+                    all_ipv6_samples.append(sample_copy)
+                    sample_count += 1
+                    last_ipv6_sample = None
+                    
+                last_sample_time = current_time
+                
+            else:
+                time_to_next_sample = sample_interval - (current_time - last_sample_time)
+                sleep_time = min(time_to_next_sample, 0.01)
+                if sleep_time > 0:
+                    time.sleep(sleep_time)
 
-except KeyboardInterrupt:
-    print("Sampling interrupted by user.")
-finally:
-    # Flush final et fermeture propre
-    csvfile.flush()
-    os.fsync(csvfile.fileno())  # only one time at the end
-    csvfile.close()
+    except KeyboardInterrupt:
+        print("Sampling interrupted by user.")
+    finally:
+        duration_actual = time.time() - start_ts
+        print(f"Collection done in {duration_actual:.1f}s")
+        print(f"Samples collected: {sample_count}")
+        print(f"Average frequency: {sample_count/duration_actual:.1f} samples/second")
+        
+        return {
+            'ipv4': all_ipv4_samples,
+            'ipv6': all_ipv6_samples,
+            'duration': duration_actual,
+            'sample_count': sample_count
+        }
+
+# If run as standalone script
+if __name__ == "__main__":
+    LABEL = sys.argv[1] if len(sys.argv) > 1 else "unknown"
+    DURATION = float(sys.argv[2]) if len(sys.argv) > 2 else 15.0
     
-    duration_actual = time.time() - start_ts
-    print(f"Collection done in {duration_actual:.1f}s")
-    print(f"Samples collected: {sample_count}")
-    print(f"Average frequency: {sample_count/duration_actual:.1f} samples/seconde")
-    print(f"Wrote {filename}")
+    result = start_collection(DURATION)
+    print(f"Collection completed. IPv4 samples: {len(result['ipv4'])}, IPv6 samples: {len(result['ipv6'])}")
