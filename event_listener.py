@@ -13,9 +13,6 @@ import subprocess
 from socket import inet_ntop, AF_INET, AF_INET6
 import threading
 
-
-
-
 # define BPF program
 bpf_text = """
 #include <uapi/linux/ptrace.h>
@@ -68,7 +65,6 @@ int trace_ack(struct pt_regs *ctx, struct sock *sk)
 }
 """
 
-
 class IPv4Event(ct.Structure):
     _fields_ = [("daddr", ct.c_uint32)]
 
@@ -83,105 +79,85 @@ def clean_ipv6_mapped_addr(addr):
 class Connection:
     processed_ips = set()
     analysis_in_progress = False
+
+# Global functions for handling events
+def handle_ipv4_event(cpu, data, size):
+    try:
+        event = ct.cast(data, ct.POINTER(IPv4Event)).contents
+        dst_ip = inet_ntop(AF_INET, pack("I", event.daddr))
+        print(f"IPv4 event received: {dst_ip}")
+        trigger_analysis(dst_ip)
+
+    except Exception as e:
+        print(f"Error during handle_ipv4_event: {e}")
+
+def handle_ipv6_event(cpu, data, size):
+    try:
+        event = ct.cast(data, ct.POINTER(IPv6Event)).contents
+        dst_ip = inet_ntop(AF_INET6, event.daddr)
+        dst_ip = clean_ipv6_mapped_addr(dst_ip)
+        print(f"IPv6 event received: {dst_ip}")
+        trigger_analysis(dst_ip)
+
+    except Exception as e:
+        print(f"Error during handle_ipv6_event: {e}")
+
+def run_analysis(dst_ip_str):
+    try:
+        print(f"1. Launching write_socket_data.py for: {dst_ip_str}")
+        subprocess.run(
+            ["python3", "write_socket_data.py", "unknown", dst_ip_str],
+            check=True, timeout=20
+        )
+        print("   Collection finished.")
+
+        print("2. Launching modif.py")
+        subprocess.run(
+            ["python3", "modif.py", f"data_prod_{dst_ip_str.replace(':', '_')}.csv"],
+            check=True, timeout=20
+        )
+        print("   Modification finished.")
+
+        print("3. Launching predict_cca.py")
+        subprocess.run(
+            ["python3", "predict_cca.py"],
+            check=True, timeout=10
+        )
+        print(f"--- ✅ Prediction for: {dst_ip_str} terminated ---")
+
+    except Exception as e:
+        print(f"   ❌ An error occurred during the process: {e}")
+    finally:
+        Connection.analysis_in_progress = False
+
+def trigger_analysis(dst_ip_str):
+    if Connection.analysis_in_progress:
+        print(f"Already processing, skipping: {dst_ip_str}")
+        return
+        
+    if dst_ip_str in Connection.processed_ips:
+        return
+        
+    Connection.processed_ips.add(dst_ip_str)
+    Connection.analysis_in_progress = True
     
-    def __init__(self, ip):
-        self.ip = None
-        self.thread = None
-        self.csv_file_name = f"data_prod{self.ip}.csv"
+    try:
+        print(f"\n--- Process start for: {dst_ip_str} ---")
+        # Run analysis in a separate thread
+        thread = threading.Thread(target=run_analysis, args=(dst_ip_str,))
+        thread.daemon = True
+        thread.start()
         
-    def handle_ipv4_event(self, cpu, data):
-        try:
-            event = ct.cast(data, ct.POINTER(IPv4Event)).contents
-            dst_ip = inet_ntop(AF_INET, pack("I", event.daddr))
-            print(f"IPv4 event received: {dst_ip}")
-            trigger_analysis(dst_ip)
-            self.thread = threading.Thread(target=self.run_analysis, args=(dst_ip))
-            self.thread.daemon = True
-            self.thread.start()
-            analysis_in_progress = True
-
-        except Exception as e:
-            print(f"Error during handle_ipv4_event: {e}")
-
-    def handle_ipv6_event(self, cpu, data):
-        try:
-            event = ct.cast(data, ct.POINTER(IPv6Event)).contents
-            dst_ip = inet_ntop(AF_INET6, event.daddr)
-            dst_ip = clean_ipv6_mapped_addr(dst_ip)
-            #print(f"Événement IPv6 reçu pour IP: {dst_ip}")
-            trigger_analysis(dst_ip)
-            self.thread = threading.Thread(target=self.run_analysis, args=(dst_ip))
-            self.thread.daemon = True
-            self.thread.start()
-            analysis_in_progress = True
-
-        except Exception as e:
-            print(f"Error during handle_ipv6_event: {e}")
-
-    
-    def run_analysis(self, dst_ip_str):
-
-        try:
-            print(f"1. Launching write_socket_data.py for: {dst_ip_str}")
-            subprocess.run(
-                ["python3", "write_socket_data.py", "unknown", dst_ip_str],
-                check=True, timeout=20
-            )
-            print("   Collection finished.")
-
-            print("2. Launching modif.py")
-            subprocess.run(
-                ["python3", "modif.py", "data_prod.csv"],
-                check=True, timeout=20
-            )
-            print("   Modification finished.")
-
-            print("3. Launching predict_cca.py")
-            subprocess.run(
-                ["python3", "predict_cca.py"],
-                check=True, timeout=10
-            )
-            print(f"--- ✅ Prediction for: {dst_ip_str} terminated ---")
-
-        except Exception as e:
-            print(f"   ❌ An error occured durung the process: {e}")
-        finally:
-            analysis_in_progress = False
-
-
-
-def trigger_analysis(dst_ip_str, self):
-        global analysis_in_progress
-        
-        # if analysis_in_progress:
-        #     print(f"Already proccessing, skiping: {dst_ip_str}")
-        #     return
-            
-        if dst_ip_str in Connection.processed_ips:
-            #print(f"IP {dst_ip_str} déjà analysée, ignorant")
-            return
-            
-        Connection.processed_ips.add(dst_ip_str)
-        
-        try:
-            print(f"\n--- Process start for: {dst_ip_str} ---")
-            print(f"1. Launching get_socket_data.py for: {dst_ip_str}")
-            subprocess.run(
-                ["python3", "get_socket_data.py", "unknown", 15],
-                check=True, timeout=20
-            )
-            print("   Collection finished.")
-        except Exception as e:
-            print(f"   ❌ An error occured durung the process: {e}")
-        
-
+    except Exception as e:
+        print(f"   ❌ An error occurred during trigger_analysis: {e}")
+        Connection.analysis_in_progress = False
 
 # initialize BPF
 print("Initialising BPF program")
 b = BPF(text=bpf_text)
 b.attach_kprobe(event="tcp_ack", fn_name="trace_ack")
-b["ipv4_events"].open_perf_buffer(Connection.handle_ipv4_event, page_cnt=64)
-b["ipv6_events"].open_perf_buffer(Connection.handle_ipv6_event, page_cnt=64)
+b["ipv4_events"].open_perf_buffer(handle_ipv4_event, page_cnt=64)
+b["ipv6_events"].open_perf_buffer(handle_ipv6_event, page_cnt=64)
 
 print("Waiting for TCP events on port 5201")
 
