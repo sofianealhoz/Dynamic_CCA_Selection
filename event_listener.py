@@ -89,7 +89,7 @@ class Connection:
         self.thread = None
         self.csv_file_name = f"data_prod{self.ip}.csv"
         
-    def handle_ipv4_event(self, cpu, data, size):
+    def handle_ipv4_event(self, cpu, data):
         try:
             event = ct.cast(data, ct.POINTER(IPv4Event)).contents
             dst_ip = inet_ntop(AF_INET, pack("I", event.daddr))
@@ -103,7 +103,7 @@ class Connection:
         except Exception as e:
             print(f"Error during handle_ipv4_event: {e}")
 
-    def handle_ipv6_event(self, cpu, data, size):
+    def handle_ipv6_event(self, cpu, data):
         try:
             event = ct.cast(data, ct.POINTER(IPv6Event)).contents
             dst_ip = inet_ntop(AF_INET6, event.daddr)
