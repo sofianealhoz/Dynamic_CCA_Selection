@@ -96,7 +96,7 @@ def handle_ipv6_event(cpu, data, size):
         event = ct.cast(data, ct.POINTER(IPv6Event)).contents
         dst_ip = inet_ntop(AF_INET6, event.daddr)
         dst_ip = clean_ipv6_mapped_addr(dst_ip)
-        print(f"IPv6 event received: {dst_ip}")
+        #print(f"IPv6 event received: {dst_ip}")
         trigger_analysis(dst_ip)
 
     except Exception as e:
@@ -120,7 +120,7 @@ def run_analysis(dst_ip_str):
 
         print("3. Launching predict_cca.py")
         subprocess.run(
-            ["python3", "predict_cca.py"],
+            ["python3", "predict_cca.py", dst_ip_str],
             check=True, timeout=10
         )
         print(f"--- ✅ Prediction for: {dst_ip_str} terminated ---")
@@ -132,7 +132,7 @@ def run_analysis(dst_ip_str):
 
 def trigger_analysis(dst_ip_str):
     if Connection.analysis_in_progress:
-        print(f"Already processing, skipping: {dst_ip_str}")
+        #print(f"Already processing, skipping: {dst_ip_str}")
         return
         
     if dst_ip_str in Connection.processed_ips:
