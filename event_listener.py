@@ -11,6 +11,8 @@ import sys
 import socket
 import subprocess
 from socket import inet_ntop, AF_INET, AF_INET6
+import shutil
+
 
 # define BPF program
 bpf_text = """
@@ -86,7 +88,6 @@ def trigger_analysis(dst_ip_str):
         return
         
     if dst_ip_str in processed_ips:
-        #print(f"IP {dst_ip_str} déjà analysée, ignorant")
         return
         
     processed_ips.add(dst_ip_str)
@@ -95,26 +96,55 @@ def trigger_analysis(dst_ip_str):
     print(f"\n--- Process start for: {dst_ip_str} ---")
 
     try:
-        print(f"1. Launching get_socket_data.py for: {dst_ip_str}")
+        # Phase 1: Prédiction
+        duration_predict = 0.25
+        duration_benchmark = 1 - 0.25
+        duration_total = duration_benchmark + duration_predict
+
+        print(f"1. Launching get_socket_data.py to predict cca for: {dst_ip_str}")
         subprocess.run(
-            ["python3", "get_socket_data.py", "unknown"],
+            ["python3", "get_socket_data.py", "unknown", str(duration_benchmark), "p"],
             check=True, timeout=20
         )
-        print("   Collection finished.")
+        print("   Collection to predict cca finished.")
+
+        # Construire le nom de fichier généré par get_socket_data.py
+        SOURCE = "macbook-mobile-vodafone"
+        filename = f"data_benchmarck_{SOURCE}_iperf3_{int(duration_total)}min.csv"
 
         print("2. Launching modif.py")
         subprocess.run(
-            ["python3", "modif.py", "data_prod.csv"],
+            ["python3", "modif.py", filename],  # ← Nom correct
             check=True, timeout=20
         )
         print("   Modification finished.")
 
+        copy = f"copy_{filename}"
+        shutil.copyfile(filename, copy)
+        print(f"Copie créée : {copy}")
+
+        print(f"4. Launching get_socket_data.py for benchmark for: {dst_ip_str}")
+        p1 = subprocess.Popen(
+            ["python3", "get_socket_data.py", "unknown", str(duration_benchmark), "b"]
+        )
+        print("   Collection for benchmark started.")
+
+        time.sleep(2)
+
         print("3. Launching predict_cca.py")
         subprocess.run(
-            ["python3", "predict_cca.py"],
+            ["python3", "predict_cca.py", copy],
             check=True, timeout=10
         )
         print(f"--- ✅ Prediction for: {dst_ip_str} terminated ---")
+        p1.wait()
+        subprocess.run(
+        ["python3", "aggregate_csv.py", f"1st_{filename}", copy, filename],
+        check=True, timeout=10
+        )
+        print(f"--- ✅ Prediction for: {dst_ip_str} terminated ---")
+
+  
 
     except Exception as e:
         print(f"   ❌ An error occured durung the process: {e}")

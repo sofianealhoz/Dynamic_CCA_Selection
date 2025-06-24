@@ -8,6 +8,7 @@ import ctypes
 import ctypes.util
 from bcc import BPF
 import socket
+import sys
 
 class ConnectionTuple(ctypes.Structure):
     _fields_ = [
@@ -136,7 +137,8 @@ def update_bpf_map(map_fd, key_struct, cca_algo):
     except Exception as e:
         print(f"Error during update_bpf_map: {e}")
         return False
-
-predictions = load_and_predict('data_prod.csv')
+    
+FILENAME = sys.argv[1] 
+predictions = load_and_predict(FILENAME)
 most_common = Counter(predictions).most_common(1)[0][0]
 update_pinned_map(most_common)
