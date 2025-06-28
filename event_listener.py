@@ -109,7 +109,7 @@ def trigger_analysis(dst_ip_str):
         print("   Collection to predict cca finished.")
 
         # Construire le nom de fichier généré par get_socket_data.py
-        SOURCE = "macbook-mobile-vodafone"
+        SOURCE = "vm-fibre"
         filename = f"data_benchmarck_{SOURCE}_iperf3_{int(duration_total)}min.csv"
 
         print("2. Launching modif.py")
@@ -138,12 +138,22 @@ def trigger_analysis(dst_ip_str):
         )
         print(f"--- ✅ Prediction for: {dst_ip_str} terminated ---")
         p1.wait()
+        print("2. Launching modif.py")
+        subprocess.run(
+            ["python3", "modif.py", filename],  # ← Nom correct
+            check=True, timeout=20
+        )
+        print("   Modification finished.")
         subprocess.run(
         ["python3", "aggregate_csv.py", f"1st_{filename}", copy, filename],
         check=True, timeout=10
         )
         print(f"--- ✅ Prediction for: {dst_ip_str} terminated ---")
-
+        subprocess.run(
+        ["python3", "calculate_averages.py", f"1st_{filename}"],
+        check=True, timeout=10
+        )
+        print(f"--- ✅ Benchmark done ---")
   
 
     except Exception as e:
