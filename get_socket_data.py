@@ -323,10 +323,10 @@ state[4] = 'loss'
 
 LABEL = sys.argv[1]
 duration_predict = 0.25
-duration_benchmark = 1 - 0.25
+duration_benchmark = 5 - 0.25
 duration_total = duration_benchmark + duration_predict
 start_ts = int(time.time())
-SOURCE = "vm-fibre"
+SOURCE = "vm-fibre___"
 #filename = f"new_data_macbook_{LABEL}_iperf3_{int(DURATION)}s.csv"
 filename = f"data_benchmarck_{SOURCE}_iperf3_{int(duration_total)}min.csv"
 #filename = sys.argv[2] 

@@ -98,7 +98,7 @@ def trigger_analysis(dst_ip_str):
     try:
         # Phase 1: Prédiction
         duration_predict = 0.25
-        duration_benchmark = 1 - 0.25
+        duration_benchmark = 5 - 0.25
         duration_total = duration_benchmark + duration_predict
 
         print(f"1. Launching get_socket_data.py to predict cca for: {dst_ip_str}")
@@ -109,7 +109,7 @@ def trigger_analysis(dst_ip_str):
         print("   Collection to predict cca finished.")
 
         # Construire le nom de fichier généré par get_socket_data.py
-        SOURCE = "vm-fibre"
+        SOURCE = "vm-fibre___"
         filename = f"data_benchmarck_{SOURCE}_iperf3_{int(duration_total)}min.csv"
 
         print("2. Launching modif.py")
@@ -145,12 +145,12 @@ def trigger_analysis(dst_ip_str):
         )
         print("   Modification finished.")
         subprocess.run(
-        ["python3", "aggregate_csv.py", f"1st_{filename}", copy, filename],
+        ["python3", "aggregate_csv.py", f"cubic5_{filename}", copy, filename],
         check=True, timeout=10
         )
         print(f"--- ✅ Prediction for: {dst_ip_str} terminated ---")
         subprocess.run(
-        ["python3", "calculate_averages.py", f"1st_{filename}"],
+        ["python3", "calculate_averages.py", f"cubic5_{filename}"],
         check=True, timeout=10
         )
         print(f"--- ✅ Benchmark done ---")
