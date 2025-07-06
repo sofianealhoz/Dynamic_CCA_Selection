@@ -79,6 +79,19 @@ def clean_ipv6_mapped_addr(addr):
 
 processed_ips = set()
 analysis_in_progress = False
+benchmark_type = sys.argv[1]
+duration_predict = 0.25
+duration_benchmark = 1 - 0.25  ######################
+duration_total = duration_benchmark + duration_predict
+algo = "cubic" #############################
+env = "wi-fi"  #############################
+SOURCE = algo + "-" + env
+if benchmark_type == 's':
+    col = str(int(duration_total)) + 'min_solution'
+else:
+    col = str(int(duration_total)) + 'min_algo'
+#SOURCE = "vm-fibre___"  
+filename = f"benchmarck_{benchmark_type}_{SOURCE}_{int(duration_total)}min.csv"
 
 def trigger_analysis(dst_ip_str):
     global analysis_in_progress
@@ -94,72 +107,99 @@ def trigger_analysis(dst_ip_str):
     analysis_in_progress = True
     
     print(f"\n--- Process start for: {dst_ip_str} ---")
+    if benchmark_type == 's' :
+        try:
+            # Phase 1: Prédiction
 
-    try:
-        # Phase 1: Prédiction
-        duration_predict = 0.25
-        duration_benchmark = 5 - 0.25
-        duration_total = duration_benchmark + duration_predict
+            print(f"1. Launching get_socket_data.py to predict cca for: {dst_ip_str}")
+            subprocess.run(
+                ["python3", "get_socket_data.py", "unknown", filename, "s1", str(duration_benchmark), SOURCE],
+                check=True, timeout=20
+            )
+            print("   Collection to predict cca finished.")
 
-        print(f"1. Launching get_socket_data.py to predict cca for: {dst_ip_str}")
-        subprocess.run(
-            ["python3", "get_socket_data.py", "unknown", str(duration_benchmark), "p"],
-            check=True, timeout=20
-        )
-        print("   Collection to predict cca finished.")
 
-        # Construire le nom de fichier généré par get_socket_data.py
-        SOURCE = "vm-fibre___"
-        filename = f"data_benchmarck_{SOURCE}_iperf3_{int(duration_total)}min.csv"
+            print("2. Launching modif.py")
+            subprocess.run(
+                ["python3", "modif.py", filename],  # ← Nom correct
+                check=True, timeout=20
+            )
+            print("   Modification finished.")
 
-        print("2. Launching modif.py")
-        subprocess.run(
-            ["python3", "modif.py", filename],  # ← Nom correct
-            check=True, timeout=20
-        )
-        print("   Modification finished.")
+            copy = f"copy_{filename}"
+            shutil.copyfile(filename, copy)
+            print(f"Copie créée : {copy}")
 
-        copy = f"copy_{filename}"
-        shutil.copyfile(filename, copy)
-        print(f"Copie créée : {copy}")
+            print(f"4. Launching get_socket_data.py for benchmark for: {dst_ip_str}")
+            p1 = subprocess.Popen(
+                ["python3", "get_socket_data.py", "unknown", filename, "s2", str(duration_benchmark), SOURCE]
+            )
+            print("   Collection for benchmark started.")
 
-        print(f"4. Launching get_socket_data.py for benchmark for: {dst_ip_str}")
-        p1 = subprocess.Popen(
-            ["python3", "get_socket_data.py", "unknown", str(duration_benchmark), "b"]
-        )
-        print("   Collection for benchmark started.")
+            time.sleep(2)
 
-        time.sleep(2)
-
-        print("3. Launching predict_cca.py")
-        subprocess.run(
-            ["python3", "predict_cca.py", copy],
+            print("3. Launching predict_cca.py")
+            subprocess.run(
+                ["python3", "predict_cca.py", copy],
+                check=True, timeout=10
+            )
+            print(f"--- ✅ Prediction for: {dst_ip_str} terminated ---")
+            p1.wait()
+            print("2. Launching modif.py")
+            subprocess.run(
+                ["python3", "modif.py", filename],  # ← Nom correct
+                check=True, timeout=20
+            )
+            print("   Modification finished.")
+            subprocess.run(
+            #["python3", "aggregate_csv.py", f"cubic5_{filename}", copy, filename],
+            ["python3", "aggregate_csv.py", f"f_{filename}", copy, filename],
             check=True, timeout=10
-        )
-        print(f"--- ✅ Prediction for: {dst_ip_str} terminated ---")
-        p1.wait()
-        print("2. Launching modif.py")
-        subprocess.run(
-            ["python3", "modif.py", filename],  # ← Nom correct
-            check=True, timeout=20
-        )
-        print("   Modification finished.")
-        subprocess.run(
-        ["python3", "aggregate_csv.py", f"cubic5_{filename}", copy, filename],
-        check=True, timeout=10
-        )
-        print(f"--- ✅ Prediction for: {dst_ip_str} terminated ---")
-        subprocess.run(
-        ["python3", "calculate_averages.py", f"cubic5_{filename}"],
-        check=True, timeout=10
-        )
-        print(f"--- ✅ Benchmark done ---")
-  
+            )
+            print(f"--- ✅ Prediction for: {dst_ip_str} terminated ---")
+            subprocess.run(
+            ["python3", "calculate_averages.py", f"f_{filename}", "benchmark_data_troughput_and_srtt.csv", algo, env, col],
+            check=True, timeout=10
+            )
+            print(f"--- ✅ Benchmark done ---")
+    
 
-    except Exception as e:
-        print(f"   ❌ An error occured durung the process: {e}")
-    finally:
-        analysis_in_progress = False
+        except Exception as e:
+            print(f"   ❌ An error occured durung the process: {e}")
+        finally:
+            analysis_in_progress = False
+    else:
+        try:
+
+            print(f"1. Launching get_socket_data.py for fixed cca analysis for: {dst_ip_str}")
+            subprocess.run(
+                ["python3", "get_socket_data.py", "unknown", filename, "c", str(duration_benchmark), SOURCE],
+                check=True
+            )
+            print("   Collection for fixed cca analysis finished.")
+
+
+            print("2. Launching modif.py for fixed cca analysis")
+            subprocess.run(
+                ["python3", "modif.py", filename],  # ← Nom correct
+                check=True, timeout=20
+            )
+            print("   Modification finished.")
+
+    
+            subprocess.run(
+            #["python3", "calculate_averages.py", f"cubic5_{filename}"],
+            ["python3", "calculate_averages.py", filename, "benchmark_data_troughput_and_srtt.csv", algo, env, col],
+            check=True, timeout=10
+            )
+            print(f"--- ✅ Benchmark for fixed cca done ---")
+    
+
+        except Exception as e:
+            print(f"   ❌ An error occured durung the process: {e}")
+        finally:
+            analysis_in_progress = False
+
 
 def handle_ipv4_event(cpu, data, size):
     try:
