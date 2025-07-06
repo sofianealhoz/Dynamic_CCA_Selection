@@ -42,12 +42,17 @@ int bpf_basertt(struct bpf_sock_ops *skops)
 {
     int op = (int)skops->op;
     __u32 remote_ip_nbo = skops->remote_ip4;
+    __u8 *already_configured;
+    struct connection_tuple cc_id;
+    char *con_str;
+    int ret;
+    __u8 flag;
 
     switch (op)
     {
     case BPF_SOCK_OPS_TCP_ACK_CB:
         // Vérifier si cette connexion a déjà été configurée
-        __u8 *already_configured = bpf_map_lookup_elem(&configured_connections, &remote_ip_nbo);
+        already_configured = bpf_map_lookup_elem(&configured_connections, &remote_ip_nbo);
         
         if (already_configured != NULL) {
             // Déjà configurée, ne rien faire
@@ -56,18 +61,17 @@ int bpf_basertt(struct bpf_sock_ops *skops)
 
         bpf_printk("First ACK for IP: %u\n", remote_ip_nbo);
 
-        struct connection_tuple cc_id;
         cc_id.dst_ip = remote_ip_nbo;
         
-        char *con_str = bpf_map_lookup_elem(&key_cong_map, &cc_id);
+        con_str = bpf_map_lookup_elem(&key_cong_map, &cc_id);
 
         if (con_str != NULL) {
             bpf_printk("Setting CCA to %s for IP: %u (FIRST TIME)\n", con_str, remote_ip_nbo);
-            int ret = bpf_setsockopt(skops, SOL_TCP, TCP_CONGESTION, con_str, 16);
+            ret = bpf_setsockopt(skops, SOL_TCP, TCP_CONGESTION, con_str, 16);
             
             if (ret == 0) {
                 // Marquer cette connexion comme configurée
-                __u8 flag = 1;
+                flag = 1;
                 bpf_map_update_elem(&configured_connections, &remote_ip_nbo, &flag, BPF_ANY);
                 bpf_printk("✅ CCA %s applied successfully\n", con_str);
             } else {

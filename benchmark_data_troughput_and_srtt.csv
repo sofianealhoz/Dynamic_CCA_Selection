@@ -41,3 +41,11 @@ highspeed,datacenter,throughput,,,,,42586.74,
 highspeed,datacenter,srtt,,,,,431.52,
 scalable,datacenter,throughput,,,,,97191.04,
 scalable,datacenter,srtt,,,,,1869.39,
+testwestwoodvssctcp,datacenter,throughput,,100526.31,,,,
+testwestwoodvssctcp,datacenter,srtt,,1578.02,,,,
+sol,datacenter,throughput,,,,,,90651.06
+sol,datacenter,srtt,,,,,,1165.25
+sol,fibre,throughput,,,,,,8035.59
+sol,fibre,srtt,,,,,,2510.63
+sol2,fibre,throughput,,,,,,7979.77
+sol2,fibre,srtt,,,,,,2570.89
