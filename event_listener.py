@@ -81,9 +81,9 @@ processed_ips = set()
 analysis_in_progress = False
 benchmark_type = sys.argv[1]
 duration_predict = 0.25
-duration_benchmark = 1 - 0.25  ######################
+duration_benchmark = 10 - 0.25  ######################
 duration_total = duration_benchmark + duration_predict
-algo = "bbr2" #############################
+algo = "scalable" #############################
 env = "datacenter"  #############################
 SOURCE = algo + "-" + env
 if benchmark_type == 's':
