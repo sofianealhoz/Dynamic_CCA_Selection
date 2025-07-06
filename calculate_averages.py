@@ -25,7 +25,7 @@ def calculate_rtt_averages(csv_file):
 
         print(f"Average SRTT: {srtt_mean:.2f} µs")
         print(f"Average RTT:  {rtt_mean:.2f} µs")
-        return {'srtt_mean': srtt_mean, 'rtt_mean': rtt_mean, 'throughput_mean': throughput_mean}
+        return {'srtt_mean': round(srtt_mean,2), 'rtt_mean': round(rtt_mean,2), 'throughput_mean': round(throughput_mean,2)}
 
     except FileNotFoundError:
         print(f"Error: File {csv_file} not found")

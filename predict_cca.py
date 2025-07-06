@@ -47,7 +47,7 @@ def parse_connection_id_to_tuple(conn_str):
     try:
         dst_ip_str = conn_str.strip()
 
-        dst_ip_nbo = int.from_bytes(socket.inet_aton(dst_ip_str), 'big')
+        dst_ip_nbo = int.from_bytes(socket.inet_aton(dst_ip_str), 'little')
 
         
 

@@ -39,15 +39,16 @@ int bpf_basertt(struct bpf_sock_ops *skops)
 
     // On utilise directement l'IP en network byte order
     __u32 remote_ip_nbo = skops->remote_ip4;
+    //remote_ip_nbo = bpf_ntohl(remote_ip_nbo);  // Network byte order (big endian)
 
     switch (op)
     {
-    case BPF_SOCK_OPS_PASSIVE_ESTABLISHED_CB:
-        bpf_printk("enter BPF_SOCK_OPS_PASSIVE_ESTABLISHED_CB for IP: %u\n", remote_ip_nbo);
+    case BPF_SOCK_OPS_TCP_ACK_CB:
+        bpf_printk("enter BPF_SOCK_OPS_TCP_ACK_CB for IP: %u\n", remote_ip_nbo);
 
         struct connection_tuple cc_id;
         cc_id.dst_ip = remote_ip_nbo; // Utiliser l'IP en network byte order
-
+        
         char *con_str = bpf_map_lookup_elem(&key_cong_map, &cc_id);
 
         if (con_str != NULL) {

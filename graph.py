@@ -7,14 +7,14 @@ plt.ioff()
 
 # Read the data file
 df = pd.read_csv('benchmark_data_troughput_and_srtt.csv')
-
-# Function to calculate gain percentage
+df = df.sort_values(by='algo')  # On trie, df devient un DataFrame trié
+df.to_csv('benchmark_data_troughput_and_srtt.csv', index=False)  # On sauvegarde, mais on ne change PAS df !# Function to calculate gain percentage
 def calculate_gain(algo_value, solution_value):
     return ((solution_value - algo_value) / algo_value) * 100
 
 # Prepare data for graphs
 algorithms = ['cubic', 'bbr', 'reno']
-environments = ['fibre', 'datacenter']
+environments = ['fibre', 'datacenter','wi-fi']
 metrics = ['throughput', 'srtt']
 time_periods = ['1min', '5min', '10min']
 
@@ -35,6 +35,8 @@ for i, metric in enumerate(metrics):
         
         gains_fibre = []
         gains_datacenter = []
+        gains_wifi = []
+
         labels = []
         
         for period in time_periods:
@@ -60,6 +62,16 @@ for i, metric in enumerate(metrics):
                 gains_datacenter.append(gain_datacenter)
             else:
                 gains_datacenter.append(0)
+
+                        # Data for wi-fi
+            wifi_row = algo_data[algo_data['env'] == 'wi-fi']
+            if not wifi_row.empty:
+                algo_val = wifi_row[algo_col].values[0]
+                solution_val = wifi_row[solution_col].values[0]
+                gain_wifi = calculate_gain(algo_val, solution_val)
+                gains_wifi.append(gain_wifi)
+            else:
+                gains_wifi.append(0)
             
             labels.append(period.replace('min', ' min'))
         
@@ -69,6 +81,7 @@ for i, metric in enumerate(metrics):
         
         bars1 = ax.bar(x - width/2, gains_fibre, width, label='Fibre', alpha=0.8, color='skyblue')
         bars2 = ax.bar(x + width/2, gains_datacenter, width, label='Datacenter', alpha=0.8, color='lightcoral')
+        bars3 = ax.bar(x + width/2, gains_wifi, width, label='Wi-Fi', alpha=0.8, color='mediumseagreen')
         
         # Customize the chart
         ax.set_xlabel('Time period')

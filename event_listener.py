@@ -83,8 +83,8 @@ benchmark_type = sys.argv[1]
 duration_predict = 0.25
 duration_benchmark = 1 - 0.25  ######################
 duration_total = duration_benchmark + duration_predict
-algo = "cubic" #############################
-env = "wi-fi"  #############################
+algo = "bbr2" #############################
+env = "datacenter"  #############################
 SOURCE = algo + "-" + env
 if benchmark_type == 's':
     col = str(int(duration_total)) + 'min_solution'
@@ -224,8 +224,8 @@ def handle_ipv6_event(cpu, data, size):
 print("Initialising BPF program")
 b = BPF(text=bpf_text)
 b.attach_kprobe(event="tcp_ack", fn_name="trace_ack")
-b["ipv4_events"].open_perf_buffer(handle_ipv4_event, page_cnt=64)
-b["ipv6_events"].open_perf_buffer(handle_ipv6_event, page_cnt=64)
+b["ipv4_events"].open_perf_buffer(handle_ipv4_event, page_cnt=512)
+b["ipv6_events"].open_perf_buffer(handle_ipv6_event, page_cnt=512)
 
 print("Waiting for TCP events on port 5201")
 
