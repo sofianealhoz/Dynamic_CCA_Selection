@@ -83,8 +83,8 @@ benchmark_type = sys.argv[1]
 duration_predict = 0.25
 duration_benchmark = 10 - 0.25  ######################
 duration_total = duration_benchmark + duration_predict
-algo = "scalable" #############################
-env = "datacenter"  #############################
+algo = "sol2" #############################
+env = "fibre"  #############################
 SOURCE = algo + "-" + env
 if benchmark_type == 's':
     col = str(int(duration_total)) + 'min_solution'
