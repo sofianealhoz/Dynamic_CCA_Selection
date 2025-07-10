@@ -23,7 +23,7 @@ algorithms = {
 #algos2 = ['cubic', 'reno', 'scalable', 'illinois']
 #algos3 = ['dctcp', 'hybla', 'vegas']
 #environments = ['fibre', 'datacenter','wi-fi']
-environments = ['fibre', 'datacenter'] 
+environments = ['fibre', 'datacenter', 'wi-fi', 'mobile'] 
 metrics = ['throughput', 'srtt']
 time_periods = ['1min', '5min', '10min']
 
@@ -185,7 +185,7 @@ for env in environments:
 
 
 # =============================================================================
-# DETAILED COMPARISON CHART
+# DETAILED COMPARISON CHART - CORRECTION
 # =============================================================================
 for file_name, algos in algorithms.items():
     # Create figure with subplots
@@ -201,8 +201,8 @@ for file_name, algos in algorithms.items():
             
             gains_fibre = []
             gains_datacenter = []
-            #gains_wifi = []
-
+            gains_wifi = []
+            gains_mobile = []
             labels = []
             
             for period in time_periods:
@@ -229,25 +229,37 @@ for file_name, algos in algorithms.items():
                 else:
                     gains_datacenter.append(0)
 
-                            # Data for wi-fi
-                # wifi_row = algo_data[algo_data['env'] == 'wi-fi']
-                # if not wifi_row.empty:
-                #     algo_val = wifi_row[algo_col].values[0]
-                #     solution_val = wifi_row[solution_col].values[0]
-                #     gain_wifi = calculate_gain(algo_val, solution_val)
-                #     gains_wifi.append(gain_wifi)
-                # else:
-                #     gains_wifi.append(0)
+                # Data for wi-fi
+                wifi_row = algo_data[algo_data['env'] == 'wi-fi']
+                if not wifi_row.empty:
+                    algo_val = wifi_row[algo_col].values[0]
+                    solution_val = wifi_row[solution_col].values[0]
+                    gain_wifi = calculate_gain(algo_val, solution_val)
+                    gains_wifi.append(gain_wifi)
+                else:
+                    gains_wifi.append(0)
+
+                # Data for mobile
+                mobile_row = algo_data[algo_data['env'] == 'mobile']
+                if not mobile_row.empty:
+                    algo_val = mobile_row[algo_col].values[0]
+                    solution_val = mobile_row[solution_col].values[0]
+                    gain_mobile = calculate_gain(algo_val, solution_val)
+                    gains_mobile.append(gain_mobile)
+                else:
+                    gains_mobile.append(0)
                 
                 labels.append(period.replace('min', ' min'))
             
-            # Create bar chart
+            # CORRECTION : Créer un graphique avec 4 barres côte à côte
             x = np.arange(len(labels))
-            width = 0.35
+            width = 0.2  # Réduire la largeur pour faire place aux 4 barres
             
-            bars1 = ax.bar(x - width/2, gains_fibre, width, label='Fibre', alpha=0.8, color='skyblue')
-            bars2 = ax.bar(x + width/2, gains_datacenter, width, label='Datacenter', alpha=0.8, color='lightcoral')
-            #bars3 = ax.bar(x + width/2, gains_wifi, width, label='Wi-Fi', alpha=0.8, color='mediumseagreen')
+            # Positionner les 4 barres côte à côte
+            bars1 = ax.bar(x - 1.5*width, gains_fibre, width, label='Fibre', alpha=0.8, color='skyblue')
+            bars2 = ax.bar(x - 0.5*width, gains_datacenter, width, label='Datacenter', alpha=0.8, color='lightcoral')
+            bars3 = ax.bar(x + 0.5*width, gains_wifi, width, label='Wi-Fi', alpha=0.8, color='mediumseagreen')
+            bars4 = ax.bar(x + 1.5*width, gains_mobile, width, label='Mobile', alpha=0.8, color='orange')
             
             # Customize the chart
             ax.set_xlabel('Time period')
@@ -255,7 +267,7 @@ for file_name, algos in algorithms.items():
             ax.set_title(f'{metric.title()} - Solution vs {algo.upper()}')
             ax.set_xticks(x)
             ax.set_xticklabels(labels)
-            ax.legend()
+            ax.legend(loc='best', fontsize=8)  # Réduire la taille de la légende
             ax.grid(True, alpha=0.3)
             ax.axhline(y=0, color='black', linestyle='-', linewidth=0.5)
             
@@ -263,28 +275,27 @@ for file_name, algos in algorithms.items():
             if metric == 'srtt':
                 ax.invert_yaxis()
             
-            # Add value labels on bars
-            def add_value_labels(bars):
+            # Add value labels on bars (optionnel car ça peut être illisible avec 4 barres)
+            def add_value_labels(bars, size=7):
                 for bar in bars:
                     height = bar.get_height()
-                    ax.annotate(f'{height:.1f}%',
-                            xy=(bar.get_x() + bar.get_width() / 2, height),
-                            xytext=(0, 3 if height >= 0 else -15),
-                            textcoords="offset points",
-                            ha='center', va='bottom' if height >= 0 else 'top',
-                            fontsize=9)
+                    if abs(height) > 1:  # Afficher seulement si la valeur est significative
+                        ax.annotate(f'{height:.0f}%',
+                                xy=(bar.get_x() + bar.get_width() / 2, height),
+                                xytext=(0, 3 if height >= 0 else -15),
+                                textcoords="offset points",
+                                ha='center', va='bottom' if height >= 0 else 'top',
+                                fontsize=size)
             
+            # Ajouter les labels avec une taille réduite
             add_value_labels(bars1)
             add_value_labels(bars2)
-            #add_value_labels(bars3)
-
+            add_value_labels(bars3)
+            add_value_labels(bars4)
 
     plt.tight_layout()
-
-    # Save the detailed chart
     plt.savefig(f'gains_comparison_{file_name}.png', dpi=300, bbox_inches='tight')
     print(f"Detailed chart saved as 'gains_comparison_{file_name}.png'")
-    #plt.show()
 
 
 
