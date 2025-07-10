@@ -81,10 +81,10 @@ processed_ips = set()
 analysis_in_progress = False
 benchmark_type = sys.argv[1]
 duration_predict = 0.25
-duration_benchmark = 1 - 0.25  ######################
+duration_benchmark = 5 - 0.25  ######################
 duration_total = duration_benchmark + duration_predict
-algo = "scalable" #############################
-env = "fibre"  #############################
+algo = "reno" #############################
+env = "mobile"  #############################
 SOURCE = algo + "-" + env
 if benchmark_type == 's':
     col = str(int(duration_total)) + 'min_solution'
