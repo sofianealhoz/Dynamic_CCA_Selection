@@ -322,11 +322,14 @@ state[3] = 'recovery'
 state[4] = 'loss'
 
 LABEL = sys.argv[1]
-DURATION = 15.0 
-
+duration_predict = 0.25
+duration_benchmark = float(sys.argv[4]) 
+duration_total = duration_benchmark + duration_predict
 start_ts = int(time.time())
+SOURCE = sys.argv[5]
 #filename = f"new_data_macbook_{LABEL}_iperf3_{int(DURATION)}s.csv"
-filename = "data_prod.csv"
+#filename = f"data_benchmarck_{SOURCE}_iperf3_{int(duration_total)}min.csv"
+filename = sys.argv[2]
 
 csvfile = open(filename, "w", newline="")
 writer  = csv.writer(csvfile)
@@ -402,11 +405,21 @@ b["ipv6_events"].open_perf_buffer(store_ipv6_event, page_cnt=256)
 # constant storage
 sample_interval = 0.1  # 0.1s = 100ms
 last_sample_time = time.time()
-end_time = start_ts + DURATION
+if sys.argv[3] == 's1':
+    end_time = start_ts + duration_predict*60
+elif sys.argv[3] == 's2':
+    end_time = start_ts + duration_benchmark*60
+else:
+    end_time = start_ts + duration_total*60
 sample_count = 0  # to verify how many samples we collect
 
 print(f"Start sampling: every {sample_interval*1000:.0f}ms")
-print(f"Expected: {int(DURATION/sample_interval)} sampels for {DURATION:.0f} secondes")
+if sys.argv[3] == 's1':
+    print(f"Expected: {int(duration_predict*60/sample_interval)} samples for {duration_predict*60} secondes")
+elif sys.argv[3] == 's2':
+    print(f"Expected: {int(duration_benchmark*60/sample_interval)} samples for {duration_benchmark*60} secondes")
+else:
+    print(f"Expected: {int(duration_total*60/sample_interval)} samples for {duration_total*60} secondes")
 
 try:
     while time.time() < end_time:
