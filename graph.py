@@ -23,7 +23,8 @@ algorithms = {
 #algos2 = ['cubic', 'reno', 'scalable', 'illinois']
 #algos3 = ['dctcp', 'hybla', 'vegas']
 #environments = ['fibre', 'datacenter','wi-fi']
-environments = ['fibre', 'datacenter', 'wi-fi', 'mobile'] 
+#environments = ['fibre', 'datacenter', 'wi-fi', 'mobile']
+environments = ['datacenter'] 
 metrics = ['throughput', 'srtt']
 time_periods = ['1min', '5min', '10min']
 
@@ -209,15 +210,15 @@ for file_name, algos in algorithms.items():
                 algo_col = f'{period}_algo'
                 solution_col = f'{period}_solution'
                 
-                # Data for fibre
-                fibre_row = algo_data[algo_data['env'] == 'fibre']
-                if not fibre_row.empty:
-                    algo_val = fibre_row[algo_col].values[0]
-                    solution_val = fibre_row[solution_col].values[0]
-                    gain_fibre = calculate_gain(algo_val, solution_val)
-                    gains_fibre.append(gain_fibre)
-                else:
-                    gains_fibre.append(0)
+                # # Data for fibre
+                # fibre_row = algo_data[algo_data['env'] == 'fibre']
+                # if not fibre_row.empty:
+                #     algo_val = fibre_row[algo_col].values[0]
+                #     solution_val = fibre_row[solution_col].values[0]
+                #     gain_fibre = calculate_gain(algo_val, solution_val)
+                #     gains_fibre.append(gain_fibre)
+                # else:
+                #     gains_fibre.append(0)
                 
                 # Data for datacenter
                 datacenter_row = algo_data[algo_data['env'] == 'datacenter']
@@ -229,27 +230,27 @@ for file_name, algos in algorithms.items():
                 else:
                     gains_datacenter.append(0)
 
-                # Data for wi-fi
-                wifi_row = algo_data[algo_data['env'] == 'wi-fi']
-                if not wifi_row.empty:
-                    algo_val = wifi_row[algo_col].values[0]
-                    solution_val = wifi_row[solution_col].values[0]
-                    gain_wifi = calculate_gain(algo_val, solution_val)
-                    gains_wifi.append(gain_wifi)
-                else:
-                    gains_wifi.append(0)
+                # # Data for wi-fi
+                # wifi_row = algo_data[algo_data['env'] == 'wi-fi']
+                # if not wifi_row.empty:
+                #     algo_val = wifi_row[algo_col].values[0]
+                #     solution_val = wifi_row[solution_col].values[0]
+                #     gain_wifi = calculate_gain(algo_val, solution_val)
+                #     gains_wifi.append(gain_wifi)
+                # else:
+                #     gains_wifi.append(0)
 
-                # Data for mobile
-                mobile_row = algo_data[algo_data['env'] == 'mobile']
-                if not mobile_row.empty:
-                    algo_val = mobile_row[algo_col].values[0]
-                    solution_val = mobile_row[solution_col].values[0]
-                    gain_mobile = calculate_gain(algo_val, solution_val)
-                    gains_mobile.append(gain_mobile)
-                else:
-                    gains_mobile.append(0)
+                # # Data for mobile
+                # mobile_row = algo_data[algo_data['env'] == 'mobile']
+                # if not mobile_row.empty:
+                #     algo_val = mobile_row[algo_col].values[0]
+                #     solution_val = mobile_row[solution_col].values[0]
+                #     gain_mobile = calculate_gain(algo_val, solution_val)
+                #     gains_mobile.append(gain_mobile)
+                # else:
+                #     gains_mobile.append(0)
                 
-                labels.append(period.replace('min', ' min'))
+                # labels.append(period.replace('min', ' min'))
             
             # CORRECTION : Créer un graphique avec 4 barres côte à côte
             x = np.arange(len(labels))
