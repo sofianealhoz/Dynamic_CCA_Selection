@@ -12,6 +12,7 @@ import socket
 import subprocess
 from socket import inet_ntop, AF_INET, AF_INET6
 import shutil
+from datetime import datetime
 
 
 # define BPF program
@@ -83,15 +84,17 @@ benchmark_type = sys.argv[1]
 duration_predict = 0.25
 duration_benchmark = 1 - 0.25  ######################
 duration_total = duration_benchmark + duration_predict
-algo = "bbr" #############################
+algo = "cubic" #############################
 env = "datacenter"  #############################
 SOURCE = algo + "-" + env
+current_time = datetime.now().strftime("%I%p").lower()
+
 if benchmark_type == 's':
     col = str(int(duration_total)) + 'min_solution'
 else:
     col = str(int(duration_total)) + 'min_algo'
 #SOURCE = "vm-fibre___"  
-filename = f"2benchmarck_{benchmark_type}_{SOURCE}_{int(duration_total)}min.csv"
+filename = f"2benchmarck_{benchmark_type}_{SOURCE}_{int(duration_total)}min_{current_time}.csv"
 
 def trigger_analysis(dst_ip_str):
     global analysis_in_progress
