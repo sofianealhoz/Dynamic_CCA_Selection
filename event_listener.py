@@ -82,9 +82,9 @@ processed_ips = set()
 analysis_in_progress = False
 benchmark_type = sys.argv[1]
 duration_predict = 0.25
-duration_benchmark = 1 - 0.25  ######################
+duration_benchmark = 5 - 0.25  ######################
 duration_total = duration_benchmark + duration_predict
-algo = "cubic" #############################
+algo = "highspeed" #############################
 env = "datacenter"  #############################
 SOURCE = algo + "-" + env
 current_time = datetime.now().strftime("%I%p").lower()
@@ -94,6 +94,7 @@ if benchmark_type == 's':
 else:
     col = str(int(duration_total)) + 'min_algo'
 #SOURCE = "vm-fibre___"  
+#filename = f"2benchmarck_{benchmark_type}_{SOURCE}_{int(duration_total)}min.csv"
 filename = f"2benchmarck_{benchmark_type}_{SOURCE}_{int(duration_total)}min_{current_time}.csv"
 
 def trigger_analysis(dst_ip_str):

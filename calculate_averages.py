@@ -18,8 +18,11 @@ def calculate_rtt_averages(csv_file):
         # Throughput: mean of delivered difference per sample
         if 'delivered' in df.columns:
             delivered_diff = df['delivered'].diff().dropna()
+            delivered_diff = delivered_diff[delivered_diff > 0]
             throughput_mean = delivered_diff.mean()
+            throughput_min = delivered_diff.min()
             print(f"Average throughput (delivered per sample): {throughput_mean:.2f}")
+            print(f"Min throughput (delivered per sample): {throughput_min:.2f}")
         else:
             throughput_mean = None
 
