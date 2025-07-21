@@ -13,7 +13,7 @@ def calculate_gain(algo_value, solution_value):
     return ((solution_value - algo_value) / algo_value) * 100
 
 # Prepare data for graphs
-total_algos = ['cubic', 'bbr', 'reno','dctcp','bbr2','highspeed','hybla','illinois','scalable','vegas','westwood']
+total_algos = ['cubic', 'cubic_', 'cubic_codel', 'bbr', 'bbr_', 'bbr_codel', 'reno','dctcp','bbr2','highspeed','hybla','illinois','scalable','vegas','westwood']
 
 algorithms = {
     "algos1": ['bbr', 'bbr2', 'highspeed', 'westwood'],
