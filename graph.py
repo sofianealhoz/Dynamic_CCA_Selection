@@ -24,7 +24,7 @@ algorithms = {
 #algos3 = ['dctcp', 'hybla', 'vegas']
 #environments = ['fibre', 'datacenter','wi-fi']
 #environments = ['fibre', 'datacenter', 'wi-fi', 'mobile']
-environments = ['datacenter'] 
+environments = ['datacenter','wi-fi'] 
 metrics = ['throughput', 'srtt']
 time_periods = ['1min', '5min', '10min']
 
@@ -230,15 +230,15 @@ for file_name, algos in algorithms.items():
                 else:
                     gains_datacenter.append(0)
 
-                # # Data for wi-fi
-                # wifi_row = algo_data[algo_data['env'] == 'wi-fi']
-                # if not wifi_row.empty:
-                #     algo_val = wifi_row[algo_col].values[0]
-                #     solution_val = wifi_row[solution_col].values[0]
-                #     gain_wifi = calculate_gain(algo_val, solution_val)
-                #     gains_wifi.append(gain_wifi)
-                # else:
-                #     gains_wifi.append(0)
+                # Data for wi-fi
+                wifi_row = algo_data[algo_data['env'] == 'wi-fi']
+                if not wifi_row.empty:
+                    algo_val = wifi_row[algo_col].values[0]
+                    solution_val = wifi_row[solution_col].values[0]
+                    gain_wifi = calculate_gain(algo_val, solution_val)
+                    gains_wifi.append(gain_wifi)
+                else:
+                    gains_wifi.append(0)
 
                 # # Data for mobile
                 # mobile_row = algo_data[algo_data['env'] == 'mobile']
