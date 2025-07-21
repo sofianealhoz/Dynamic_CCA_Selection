@@ -55,3 +55,14 @@ yeah,wi-fi,srtt,52132.0,51491.48,52241.86,51853.46,54207.84,52782.99
 yeah,datacenter,srtt,709.04,742.35,743.73,726.22,721.88,703.27
 yeah,wi-fi,throughput,865.08,917.89,865.06,875.18,731.63,870.07
 yeah,datacenter,throughput,156356.98,163075.78,153217.1,158560.71,151140.0,155765.55
+bbr2_,datacenter,throughput,115170.68,,116710.28,,,
+bbr2_,datacenter,srtt,189.75,,183.58,,,
+bbr_,datacenter,throughput,122202.04,,121314.86,,123062.8,
+bbr_,datacenter,srtt,194.82,,210.98,,210.13,
+bbr_codel,datacenter,throughput,122641.76,,123495.84,,121841.04,
+bbr_codel,datacenter,srtt,207.99,,206.37,,206.85,
+cubic_codel,datacenter,throughput,153084.28,,154402.78,,153854.01,
+cubic_codel,datacenter,srtt,703.61,,720.84,,719.07,
+cubic_,datacenter,throughput,152283.65,,154867.09,,152783.35,
+cubic_,datacenter,srtt,707.93,,700.09,,712.19,
+
