@@ -81,11 +81,15 @@ def clean_ipv6_mapped_addr(addr):
 processed_ips = set()
 analysis_in_progress = False
 benchmark_type = sys.argv[1]
+
+duration = [1,3,5]
+algos = ["bbr", "bbr2", "cubic", "dctcp", "highspeed", "hybla", "illinois", "reno", "scalable", "vegas", "westwood", "yeah"]
+env = "datacenter"  #############################
+
 duration_predict = 0.25
 duration_benchmark = 10 - 0.25  ######################
 duration_total = duration_benchmark + duration_predict
 algo = "dctcp_" #############################
-env = "datacenter"  #############################
 SOURCE = algo + "-" + env
 current_time = datetime.now().strftime("%I%p").lower()
 
