@@ -172,17 +172,33 @@ def call_event_listener(bench_type, duration_min, algo, env):
     Créer un event_listener temporaire avec les bons paramètres
     """
     try:
-        subprocess.run(
-                ["python3", "event_listener.py", bench_type, duration_min, algo, env],  # ← Nom correct
-                check=True, timeout=20
-            )
-        print("   Modification finished.")
+        # Calculer le timeout approprié
+        duration_seconds = int(duration_min) * 60
+        timeout_seconds = duration_seconds + 120  # +2min de marge
         
+        print(f"🔄 Starting event_listener (timeout: {timeout_seconds}s)...")
+        
+        result = subprocess.run(
+            ["python3", "event_listener.py", bench_type, duration_min, algo, env],
+            timeout=timeout_seconds,  # ← CORRIGÉ
+            capture_output=True,
+            text=True
+        )
+        
+        if result.returncode == 0:
+            print(f"✅ event_listener completed successfully")
+            return True
+        else:
+            print(f"❌ event_listener failed (code: {result.returncode})")
+            print(f"   Error: {result.stderr[:200]}...")
+            return False
+            
+    except subprocess.TimeoutExpired:
+        print(f"⏰ event_listener TIMEOUT after {timeout_seconds}s")
+        return False
     except Exception as e:
-            print(f"   ❌ An error occured durung the process: {e}")
-
-    
-    return 
+        print(f"💥 Unexpected error in event_listener: {e}")
+        return False
 
 if __name__ == "__main__":
     run_all_benchmarks()
