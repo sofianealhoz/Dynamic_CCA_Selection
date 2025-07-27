@@ -25,10 +25,7 @@ def run_all_benchmarks():
     #####################################
     #####################################
 
-    if len(sys.argv) < 2:
-        print("Usage: python3 run_all_benchmarks.py <bench_type>")
-        print("  bench_type: 's' (solution) or 'c' (comparison)")
-        sys.exit(1)
+
     
     
     total_tests = len(durations) * len(algos)
@@ -63,7 +60,7 @@ def run_all_benchmarks():
             print("-" * 50)
             
             # Créer un event_listener modifié pour ce test
-            temp_listener = call_event_listener(bench_type, duration_min, algo, env)
+            temp_listener = call_event_listener(str(bench_type), str(duration_min), str(algo), str(env))
             
             start_time = datetime.now()
             

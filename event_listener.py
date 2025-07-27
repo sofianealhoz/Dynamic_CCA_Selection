@@ -86,12 +86,12 @@ benchmark_type = sys.argv[1]
 #env = "datacenter"  #############################
 #algo = "dctcp_" #############################
 
-env = sys.argv[2]
+dur = sys.argv[2]
 algo = sys.argv[3]
-dur = sys.argv[4]
+env = sys.argv[4]
 
 duration_predict = 0.25
-duration_benchmark = dur - 0.25  ######################
+duration_benchmark = float(dur) - 0.25  ######################
 duration_total = duration_benchmark + duration_predict
 SOURCE = algo + "-" + env
 current_time = datetime.now().strftime("%I%p").lower()
@@ -102,7 +102,7 @@ else:
     col = str(int(duration_total)) + 'min_algo'
 #SOURCE = "vm-fibre___"  
 #filename = f"2benchmarck_{benchmark_type}_{SOURCE}_{int(duration_total)}min.csv"
-filename = f"2benchmarck_{benchmark_type}_{SOURCE}_{int(duration_total)}min_{current_time}.csv"
+filename = f"auto_benchmarck_{benchmark_type}_{SOURCE}_{int(duration_total)}min_{current_time}.csv"
 
 def trigger_analysis(dst_ip_str):
     global analysis_in_progress
