@@ -38,13 +38,8 @@ def run_all_benchmarks():
     print(f" Type: {bench_type}")
     print("=" * 70)
     
-    # Log file pour tracer les résultats
-    log_file = f"benchmark_log_{datetime.now().strftime('%Y%m%d_%H%M%S')}.txt"
     
-    with open(log_file, 'w') as log:
-        log.write(f"Benchmark Suite Started: {datetime.now()}\n")
-        log.write(f"Type: {bench_type}\n")
-        log.write(f"Total tests: {total_tests}\n\n")
+
     
     for duration_min in durations:
         for algo in algos:
@@ -60,7 +55,7 @@ def run_all_benchmarks():
             print("-" * 50)
             
             # Créer un event_listener modifié pour ce test
-            temp_listener = call_event_listener(str(bench_type), str(duration_min), str(algo), str(env))
+            call_event_listener(str(bench_type), str(duration_min), str(algo), str(env))
             
             start_time = datetime.now()
             
@@ -87,34 +82,15 @@ def run_all_benchmarks():
                 # Lancer event_listener avec timeout
                 timeout_seconds = (duration_min * 60) + 120  # +2min marge
                 
-                result = subprocess.run(
-                    ["python3", temp_listener],
-                    timeout=timeout_seconds,
-                    capture_output=True,
-                    text=True
-                )
+
                 
                 end_time = datetime.now()
                 duration_actual = (end_time - start_time).total_seconds()
                 
-                if result.returncode == 0:
-                    print(f"✅ {algo} - {duration_min}min completed in {duration_actual:.1f}s")
-                    status = "SUCCESS"
-                else:
-                    print(f"❌ {algo} - {duration_min}min failed (code: {result.returncode})")
-                    print(f"   Error: {result.stderr[:200]}...")
-                    status = "FAILED"
-                
-                # Log le résultat
-                with open(log_file, 'a') as log:
-                    log.write(f"{current_test:2d}. {algo:12s} {duration_min}min - {status} ({duration_actual:.1f}s)\n")
-                    if result.stderr:
-                        log.write(f"    Error: {result.stderr[:100]}...\n")
                 
             except subprocess.TimeoutExpired:
                 print(f"{algo} - {duration_min}min TIMEOUT after {timeout_seconds}s")
-                with open(log_file, 'a') as log:
-                    log.write(f"{current_test:2d}. {algo:12s} {duration_min}min - TIMEOUT\n")
+                
                     
             except KeyboardInterrupt:
                 print(f"\n⏸️  Interrupted by user")
@@ -125,15 +101,9 @@ def run_all_benchmarks():
                     
             except Exception as e:
                 print(f" Unexpected error: {e}")
-                with open(log_file, 'a') as log:
-                    log.write(f"{current_test:2d}. {algo:12s} {duration_min}min - ERROR: {e}\n")
+               
             
-            finally:
-                # Nettoyer le fichier temporaire
-                try:
-                    os.remove(temp_listener)
-                except:
-                    pass
+
             
             # Pause entre tests pour stabilité
             if current_test < total_tests:
@@ -141,7 +111,6 @@ def run_all_benchmarks():
                 time.sleep(20)
     
     print(f"\n Benchmark suite completed!")
-    print(f" Results logged in: {log_file}")
     print(f" Generate graphs with: python3 graph.py")
 
 
