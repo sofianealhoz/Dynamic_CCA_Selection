@@ -57,10 +57,10 @@ def upsert_value(g_csv_file, algo, env, colonne, valeurs):
                 'metric': metric,
                 '1min_algo': None,
                 '1min_solution': None,
+                '3min_algo': None,
+                '3min_solution': None,
                 '5min_algo': None,
-                '5min_solution': None,
-                '10min_algo': None,
-                '10min_solution': None
+                '5min_solution': None
             }
             nouvelle_ligne[colonne] = valeur
             df = pd.concat([df, pd.DataFrame([nouvelle_ligne])], ignore_index=True)

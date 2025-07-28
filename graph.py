@@ -26,15 +26,15 @@ algorithms = {
 #environments = ['fibre', 'datacenter', 'wi-fi', 'mobile']
 environments = ['datacenter','wi-fi'] 
 metrics = ['throughput', 'srtt']
-time_periods = ['1min', '5min', '10min']
+time_periods = ['1min', '3min', '5min']
 
-def create_algorithms_values_chart_by_environment(environment):
+def create_algorithms_values_chart_by_environment(environment, dur):
     """Créer un graphique avec les valeurs absolues de throughput et SRTT pour un environnement spécifique"""
     
     # Préparer les données - calculer les moyennes pour chaque algorithme dans cet environnement
     algo_stats = {}
     
-    # Pour chaque algorithme, calculer les valeurs moyennes pour cet environnement
+    # Pour chaque algorithme, calculer les valeurs pour cet environnement
     for algo in total_algos:
         algo_stats[algo] = {'throughput': 0, 'srtt': 0}
         
@@ -42,31 +42,54 @@ def create_algorithms_values_chart_by_environment(environment):
             algo_data = df[(df['algo'] == algo) & (df['metric'] == metric) & (df['env'] == environment)]
             
             if not algo_data.empty:
-                values = []
-                for period in time_periods:
+                if period is None:
+                    # Mode moyenne (comportement original)
+                    values = []
+                    for p in time_periods:
+                        algo_col = f'{p}_algo'
+                        if not pd.isna(algo_data[algo_col].values[0]):
+                            values.append(algo_data[algo_col].values[0])
+                    
+                    if values:
+                        algo_stats[algo][metric] = np.mean(values)
+                else:
+                    # Mode période spécifique
                     algo_col = f'{period}_algo'
                     if not pd.isna(algo_data[algo_col].values[0]):
-                        values.append(algo_data[algo_col].values[0])
-                
-                if values:
-                    algo_stats[algo][metric] = np.mean(values)
-    
-    # Calculer les moyennes pour la solution dans cet environnement
+                        algo_stats[algo][metric] = algo_data[algo_col].values[0]
+
+        # Calculer les moyennes pour la solution dans cet environnement
     solution_stats = {'throughput': 0, 'srtt': 0}
     
     for metric in metrics:
-        values = []
-        for algo in total_algos:
-            algo_data = df[(df['algo'] == algo) & (df['metric'] == metric) & (df['env'] == environment)]
+        if period is None:
+            # Mode moyenne
+            values = []
+            for algo in total_algos:
+                algo_data = df[(df['algo'] == algo) & (df['metric'] == metric) & (df['env'] == environment)]
+                
+                if not algo_data.empty:
+                    for p in time_periods:
+                        solution_col = f'{p}_solution'
+                        if not pd.isna(algo_data[solution_col].values[0]):
+                            values.append(algo_data[solution_col].values[0])
             
-            if not algo_data.empty:
-                for period in time_periods:
+            if values:
+                solution_stats[metric] = np.mean(values)
+        else:
+            # Mode période spécifique
+            values = []
+            for algo in total_algos:
+                algo_data = df[(df['algo'] == algo) & (df['metric'] == metric) & (df['env'] == environment)]
+                
+                if not algo_data.empty:
                     solution_col = f'{period}_solution'
                     if not pd.isna(algo_data[solution_col].values[0]):
                         values.append(algo_data[solution_col].values[0])
-        
-        if values:
-            solution_stats[metric] = np.mean(values)
+            
+            if values:
+                solution_stats[metric] = np.mean(values)
+    
     
     # Filtrer uniquement les algorithmes qui ont des données pour cet environnement
     available_algos = [algo for algo in total_algos if algo_stats[algo]['throughput'] > 0 or algo_stats[algo]['srtt'] > 0]
@@ -150,7 +173,7 @@ def create_algorithms_values_chart_by_environment(environment):
     plt.tight_layout()
 
     # Sauvegarder le graphique
-    filename = f'auto_algorithms_values_comparison_{environment}.png'
+    filename = f'auto_algorithms_values_comparison_{environment}_{dur}.png'
     plt.savefig(filename, dpi=300, bbox_inches='tight')
     print(f"Algorithms values comparison chart saved as '{filename}'")
     
@@ -174,8 +197,9 @@ def create_algorithms_values_chart_by_environment(environment):
     plt.close()
 
 # Créer les nouveaux graphiques pour chaque environnement
-for env in environments:
-    create_algorithms_values_chart_by_environment(env)
+for dur in time_periods:
+    for env in environments:
+        create_algorithms_values_chart_by_environment(env,dur)
 
 
 

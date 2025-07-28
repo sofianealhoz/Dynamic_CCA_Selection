@@ -20,7 +20,7 @@ def run_all_benchmarks():
     #####################################
     #####################################
 
-    env = "datacenter"
+    env = "wi-fi"
     
     #####################################
     #####################################
@@ -60,7 +60,7 @@ def run_all_benchmarks():
             start_time = datetime.now()
             
              # NOUVEAU : Changer le CCA système
-            print(f"🔄 Preparing system for {algo}...")
+            print(f" Preparing system for {algo}...")
             
 
             
@@ -76,8 +76,8 @@ def run_all_benchmarks():
             # Vérifier que le changement a pris effet
             current_cca = verify_congestion_control()
             try:
-                print(f"🔄 Starting event_listener...")
-                print(f"💡 Please run: iperf3 -c <target_ip> -p 5201 -t {duration_min * 60}")
+                print(f" Starting event_listener...")
+                print(f" Please run: iperf3 -c <target_ip> -p 5201 -t {duration_min * 60}")
                 
                 # Lancer event_listener avec timeout
                 timeout_seconds = (duration_min * 60) + 120  # +2min marge
@@ -93,7 +93,7 @@ def run_all_benchmarks():
                 
                     
             except KeyboardInterrupt:
-                print(f"\n⏸️  Interrupted by user")
+                print(f"\n⏸  Interrupted by user")
                 choice = input("Continue with next test? (y/n): ")
                 if choice.lower() != 'y':
                     print(" Stopping all tests")
@@ -176,7 +176,7 @@ def call_event_listener(bench_type, duration_min, algo, env):
         duration_seconds = int(duration_min) * 60
         timeout_seconds = duration_seconds + 120  # +2min de marge
         
-        print(f"🔄 Starting event_listener (timeout: {timeout_seconds}s)...")
+        print(f" Starting event_listener (timeout: {timeout_seconds}s)...")
         
         result = subprocess.run(
             ["python3", "event_listener.py", bench_type, duration_min, algo, env],
@@ -194,10 +194,10 @@ def call_event_listener(bench_type, duration_min, algo, env):
             return False
             
     except subprocess.TimeoutExpired:
-        print(f"⏰ event_listener TIMEOUT after {timeout_seconds}s")
+        print(f" event_listener TIMEOUT after {timeout_seconds}s")
         return False
     except Exception as e:
-        print(f"💥 Unexpected error in event_listener: {e}")
+        print(f" Unexpected error in event_listener: {e}")
         return False
 
 if __name__ == "__main__":
