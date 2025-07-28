@@ -48,6 +48,9 @@ def run_all_benchmarks():
             if algo == "sol":
                 bench_type = "s"
                 algo = "cubic"
+            else:
+                bench_type = "c"
+
 
             print(f"\n Test {current_test}/{total_tests}")
             print(f"Algorithm: {algo}")
