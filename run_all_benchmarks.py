@@ -20,7 +20,7 @@ def run_all_benchmarks():
     #####################################
     #####################################
 
-    env = "wi-fi"
+    env = "datacenter"
     
     #####################################
     #####################################
@@ -120,6 +120,36 @@ def run_all_benchmarks():
 def set_default_congestion_control(algo):
     """
     Changer l'algorithme de contrôle de congestion par défaut du système
+    """
+    try:
+        print(f"🔧 Setting system default CCA to: {algo}")
+        
+        # Commande pour changer l'algorithme par défaut
+        cmd = ["sudo", "sysctl", "-w", f"net.ipv4.tcp_congestion_control={algo}"]
+        
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=10)
+        
+        if result.returncode == 0:
+            print(f"✅ System CCA changed to: {algo}")
+
+            # NOUVEAU : Délai pour stabilisation
+            print(f" Waiting 3s for CCA stabilization...")
+            time.sleep(3)
+
+            return True
+        else:
+            print(f"❌ Failed to change CCA: {result.stderr}")
+            return False
+            
+    except subprocess.TimeoutExpired:
+        print(f" Timeout setting CCA to {algo}")
+        return False
+    except Exception as e:
+        print(f" Error setting CCA: {e}")
+        return False
+
+def reset_iperf3_server():
+    """
     """
     try:
         print(f"🔧 Setting system default CCA to: {algo}")

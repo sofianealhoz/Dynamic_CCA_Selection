@@ -26,7 +26,7 @@ algorithms = {
 #environments = ['fibre', 'datacenter', 'wi-fi', 'mobile']
 environments = ['datacenter','wi-fi'] 
 metrics = ['throughput', 'srtt']
-time_periods = ['1min', '3min', '5min']
+time_periods = ['1min', '3min', '5min', 'total']
 
 def create_algorithms_values_chart_by_environment(environment, dur):
     """Créer un graphique avec les valeurs absolues de throughput et SRTT pour un environnement spécifique"""
@@ -42,10 +42,10 @@ def create_algorithms_values_chart_by_environment(environment, dur):
             algo_data = df[(df['algo'] == algo) & (df['metric'] == metric) & (df['env'] == environment)]
             
             if not algo_data.empty:
-                if period is None:
+                if dur == 'total':
                     # Mode moyenne (comportement original)
                     values = []
-                    for p in time_periods:
+                    for p in time_periods[:-1]:
                         algo_col = f'{p}_algo'
                         if not pd.isna(algo_data[algo_col].values[0]):
                             values.append(algo_data[algo_col].values[0])
@@ -54,7 +54,7 @@ def create_algorithms_values_chart_by_environment(environment, dur):
                         algo_stats[algo][metric] = np.mean(values)
                 else:
                     # Mode période spécifique
-                    algo_col = f'{period}_algo'
+                    algo_col = f'{dur}_algo'
                     if not pd.isna(algo_data[algo_col].values[0]):
                         algo_stats[algo][metric] = algo_data[algo_col].values[0]
 
@@ -62,14 +62,14 @@ def create_algorithms_values_chart_by_environment(environment, dur):
     solution_stats = {'throughput': 0, 'srtt': 0}
     
     for metric in metrics:
-        if period is None:
+        if dur == 'total':
             # Mode moyenne
             values = []
             for algo in total_algos:
                 algo_data = df[(df['algo'] == algo) & (df['metric'] == metric) & (df['env'] == environment)]
                 
                 if not algo_data.empty:
-                    for p in time_periods:
+                    for p in time_periods[:-1]:
                         solution_col = f'{p}_solution'
                         if not pd.isna(algo_data[solution_col].values[0]):
                             values.append(algo_data[solution_col].values[0])
@@ -83,7 +83,7 @@ def create_algorithms_values_chart_by_environment(environment, dur):
                 algo_data = df[(df['algo'] == algo) & (df['metric'] == metric) & (df['env'] == environment)]
                 
                 if not algo_data.empty:
-                    solution_col = f'{period}_solution'
+                    solution_col = f'{dur}_solution'
                     if not pd.isna(algo_data[solution_col].values[0]):
                         values.append(algo_data[solution_col].values[0])
             
