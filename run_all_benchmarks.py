@@ -20,7 +20,7 @@ def run_all_benchmarks():
     #####################################
     #####################################
 
-    env = "datacenter"
+    env = "datacenter3"
     
     #####################################
     #####################################
@@ -57,8 +57,7 @@ def run_all_benchmarks():
             print(f"Duration: {duration_min} minutes")
             print("-" * 50)
             
-            # Créer un event_listener modifié pour ce test
-            call_event_listener(str(bench_type), str(duration_min), str(algo), str(env))
+
             
             start_time = datetime.now()
             
@@ -70,7 +69,9 @@ def run_all_benchmarks():
             # Changer le CCA système
             if not set_default_congestion_control(algo):
                 print(f"⚠️  Could not set {algo} as default, continuing anyway...")
+                continue
                 # On continue quand même car le BPF peut forcer l'algorithme
+            restart_iperf3_server()  # ← AJOUT
 
             # 3. Délai supplémentaire
             print(f"⏳ Final preparation (2s)...")
@@ -78,22 +79,21 @@ def run_all_benchmarks():
 
             # Vérifier que le changement a pris effet
             current_cca = verify_congestion_control()
+            
+            print(f" Starting event_listener...")
             try:
-                print(f" Starting event_listener...")
                 print(f" Please run: iperf3 -c <target_ip> -p 5201 -t {duration_min * 60}")
                 
-                # Lancer event_listener avec timeout
-                timeout_seconds = (duration_min * 60) + 120  # +2min marge
-                
-
+                # Lancer event_listener avec le CCA déjà configuré
+                success = call_event_listener(str(bench_type), str(duration_min), str(algo_to_use), str(env))
                 
                 end_time = datetime.now()
                 duration_actual = (end_time - start_time).total_seconds()
                 
-                
-            except subprocess.TimeoutExpired:
-                print(f"{algo} - {duration_min}min TIMEOUT after {timeout_seconds}s")
-                
+                if success:
+                    print(f"✅ {algo} - {duration_min}min completed in {duration_actual:.1f}s")
+                else:
+                    print(f"❌ {algo} - {duration_min}min failed")
                     
             except KeyboardInterrupt:
                 print(f"\n⏸  Interrupted by user")
@@ -103,14 +103,11 @@ def run_all_benchmarks():
                     break
                     
             except Exception as e:
-                print(f" Unexpected error: {e}")
-               
+                print(f"💥 Unexpected error: {e}")
             
-
-            
-            # Pause entre tests pour stabilité
+            # Pause entre tests
             if current_test < total_tests:
-                print(f" Waiting 20s before next test...")
+                print(f"😴 Waiting 20s before next test...")
                 time.sleep(20)
     
     print(f"\n Benchmark suite completed!")
@@ -148,35 +145,23 @@ def set_default_congestion_control(algo):
         print(f" Error setting CCA: {e}")
         return False
 
-def reset_iperf3_server():
+def restart_iperf3_server():
     """
+    Version ultra-simple : juste kill et restart
     """
-    try:
-        print(f"🔧 Setting system default CCA to: {algo}")
-        
-        # Commande pour changer l'algorithme par défaut
-        cmd = ["sudo", "sysctl", "-w", f"net.ipv4.tcp_congestion_control={algo}"]
-        
-        result = subprocess.run(cmd, capture_output=True, text=True, timeout=10)
-        
-        if result.returncode == 0:
-            print(f"✅ System CCA changed to: {algo}")
-
-            # NOUVEAU : Délai pour stabilisation
-            print(f" Waiting 3s for CCA stabilization...")
-            time.sleep(3)
-
-            return True
-        else:
-            print(f"❌ Failed to change CCA: {result.stderr}")
-            return False
-            
-    except subprocess.TimeoutExpired:
-        print(f" Timeout setting CCA to {algo}")
-        return False
-    except Exception as e:
-        print(f" Error setting CCA: {e}")
-        return False
+    print("🔄 Restarting iperf3 server...")
+    
+    # Kill
+    subprocess.run(["pkill", "-f", "iperf3"], timeout=5)
+    time.sleep(2)
+    
+    # Restart en arrière-plan
+    subprocess.Popen([
+        "iperf3", "-s", "-p", "5201"
+    ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
+    
+    print("✅ iperf3 server restarted")
+    time.sleep(2)  # Attendre qu'il soit prêt
 
 def verify_congestion_control():
     """
