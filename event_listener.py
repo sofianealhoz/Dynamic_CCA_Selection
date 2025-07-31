@@ -173,13 +173,10 @@ def trigger_analysis(dst_ip_str):
             check=True, timeout=10
             )
             print(f"--- ✅ Benchmark done ---")
-            print(f"🏁 Analysis completed for {dst_ip_str}, stopping event_listener...")
-            os._exit(0)  # ← Sortie propre avec code 0
-
+    
 
         except Exception as e:
             print(f"   ❌ An error occured durung the process: {e}")
-            os._exit(1)  # ← Sortie avec erreur
         finally:
             analysis_in_progress = False
     else:
