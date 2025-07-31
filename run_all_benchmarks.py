@@ -83,7 +83,7 @@ def run_all_benchmarks():
                 print(f" Please run: iperf3 -c <target_ip> -p 5201 -t {duration_min * 60}")
                 
                 # Lancer event_listener avec le CCA déjà configuré
-                success = call_event_listener(str(bench_type), str(duration_min), str(algo_to_use), str(env))
+                success = call_event_listener(str(bench_type), str(duration_min), str(algo), str(env))
                 
                 end_time = datetime.now()
                 duration_actual = (end_time - start_time).total_seconds()
@@ -154,7 +154,7 @@ def restart_iperf3_server():
     # Kill
     try:
         result = subprocess.run(["pkill", "-f", "iperf3"], timeout=5)
-        if result == 0:
+        if result.returncode == 0:
             print("iperf3 process killed")
         else:
             print("No existing iperf3 process to kill")
@@ -166,8 +166,8 @@ def restart_iperf3_server():
     try:
         cgroup_file = "/tmp/cgroupv2/foo/cgroup.procs"
         if os.path.exists(cgroup_file):
-            with open(cgroup_file, "a") as "f":
-                f.write(str(os.getpid) + "\n")
+            with open(cgroup_file, "a") as f:
+                f.write(str(os.getpid()) + "\n")
             print("Python script's PID added to cgroupv2")
         else:
             print("cgroupv2 file not found")
