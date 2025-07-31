@@ -147,44 +147,51 @@ def set_default_congestion_control(algo):
 
 def restart_iperf3_server():
     """
-    Version ultra-simple : juste kill et restart
+    Version qui n'ajoute QUE iperf3 au cgroup
     """
-    print("Restarting iperf3 server...")
+    print("🔄 Restarting iperf3 server...")
     
     # Kill
     try:
         result = subprocess.run(["pkill", "-f", "iperf3"], timeout=5)
         if result.returncode == 0:
-            print("iperf3 process killed")
+            print("🛑 iperf3 process killed")
         else:
-            print("No existing iperf3 process to kill")
+            print("ℹ️  No existing iperf3 process to kill")
     except Exception as e:
-        print(f"pkill error: {e}")
+        print(f"⚠️  pkill error: {e}")
 
     time.sleep(2)
     
+    # NE PAS ajouter le processus Python au cgroup !
+    # Lancer iperf3 puis l'ajouter explicitement
+    
     try:
-        cgroup_file = "/tmp/cgroupv2/foo/cgroup.procs"
-        if os.path.exists(cgroup_file):
-            with open(cgroup_file, "a") as f:
-                f.write(str(os.getpid()) + "\n")
-            print("Python script's PID added to cgroupv2")
-        else:
-            print("cgroupv2 file not found")
-    except Exception as e:
-        print(f"cgroupv2 error: {e}")
-
-    # Restart en arrière-plan (fork)
-    try:
-        subprocess.Popen([
+        process = subprocess.Popen([
             "iperf3", "-s", "-p", "5201"
         ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        print("✅ iperf3 server restarted")
+        
+        print(f"✅ iperf3 server started (PID: {process.pid})")
+        
+        # Ajouter SEULEMENT iperf3 au cgroup
+        time.sleep(1)  # Laisser iperf3 démarrer
+        try:
+            cgroup_file = "/tmp/cgroupv2/foo/cgroup.procs"
+            if os.path.exists(cgroup_file):
+                with open(cgroup_file, "a") as f:
+                    f.write(str(process.pid) + "\n")  # ← SEULEMENT iperf3 !
+                print(f"📋 ONLY iperf3 process (PID: {process.pid}) added to cgroup")
+            else:
+                print("⚠️  cgroup file not found")
+        except Exception as e:
+            print(f"⚠️  Failed to add iperf3 to cgroup: {e}")
+        
+        time.sleep(1)
+        return True
+        
     except Exception as e:
         print(f"❌ Failed to restart iperf3: {e}")
         return False
-    
-    time.sleep(2)  # Attendre qu'il soit prêt
 
 
 
