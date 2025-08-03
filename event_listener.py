@@ -173,7 +173,7 @@ def trigger_analysis(dst_ip_str):
             check=True, timeout=10
             )
             print(f"--- ✅ Benchmark done ---")
-    
+    #f_ --> checker dans vm: les f_auto / f_... voir si pas pb de nom
 
         except Exception as e:
             print(f"   ❌ An error occured durung the process: {e}")

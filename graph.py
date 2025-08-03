@@ -173,7 +173,7 @@ def create_algorithms_values_chart_by_environment(environment, dur):
     plt.tight_layout()
 
     # Sauvegarder le graphique
-    filename = f'auto_algorithms_values_comparison_{environment}4_{dur}.png'
+    filename = f'auto_algorithms_values_comparison_{environment}3_{dur}.png'
     plt.savefig(filename, dpi=300, bbox_inches='tight')
     print(f"Algorithms values comparison chart saved as '{filename}'")
     
@@ -319,8 +319,8 @@ for file_name, algos in algorithms.items():
             add_value_labels(bars4)
 
     plt.tight_layout()
-    plt.savefig(f'auto_gains_comparison_{file_name}4.png', dpi=300, bbox_inches='tight')
-    print(f"Detailed chart saved as 'auto_gains_comparison_{file_name}4.png'")
+    plt.savefig(f'auto_gains_comparison_{file_name}3.png', dpi=300, bbox_inches='tight')
+    print(f"Detailed chart saved as 'auto_gains_comparison_{file_name}3.png'")
 
 
 
@@ -416,8 +416,8 @@ ax2.set_ylim(y_min - y_padding, y_max + y_padding)
 plt.tight_layout()
 
 # Save the global chart
-plt.savefig('auto_global_comparison4.png', dpi=300, bbox_inches='tight')
-print("Global comparison chart saved as 'auto_global_comparison4.png'")
+plt.savefig('auto_global_comparison3.png', dpi=300, bbox_inches='tight')
+print("Global comparison chart saved as 'auto_global_comparison3.png'")
 
 # Print summary statistics
 print("\nGlobal Performance Summary:")

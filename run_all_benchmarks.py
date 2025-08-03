@@ -66,17 +66,17 @@ def run_all_benchmarks():
             
             # Changer le CCA système
             if not set_default_congestion_control(algo):
-                print(f"⚠️  Could not set {algo} as default, continuing anyway...")
+                print(f"  Could not set {algo} as default, continuing anyway...")
                 continue
                 # On continue quand même car le BPF peut forcer l'algorithme
             restart_iperf3_server()  # ← AJOUT
 
             # 3. Délai supplémentaire
-            print(f"⏳ Final preparation (2s)...")
-            time.sleep(2)
+            #print(f" Final preparation (2s)...")
+            #time.sleep(2)
 
             # Vérifier que le changement a pris effet
-            current_cca = verify_congestion_control()
+            #current_cca = verify_congestion_control()
             
             print(f" Starting event_listener...")
             try:
@@ -101,12 +101,12 @@ def run_all_benchmarks():
                     break
                     
             except Exception as e:
-                print(f"💥 Unexpected error: {e}")
+                print(f" Unexpected error: {e}")
             
             # Pause entre tests
             if current_test < total_tests:
-                print(f"😴 Waiting 20s before next test...")
-                time.sleep(20)
+                print(f" Waiting 10s before next test...")
+                time.sleep(10)
     
     print(f"\n Benchmark suite completed!")
     print(f" Generate graphs with: python3 graph.py")
@@ -149,19 +149,19 @@ def restart_iperf3_server():
     """
     Version qui n'ajoute QUE iperf3 au cgroup
     """
-    print("🔄 Restarting iperf3 server...")
+    print(" Restarting iperf3 server...")
     
     # Kill
     try:
         result = subprocess.run(["pkill", "-f", "iperf3"], timeout=5)
         if result.returncode == 0:
-            print("🛑 iperf3 process killed")
+            print(" iperf3 process killed")
         else:
-            print("ℹ️  No existing iperf3 process to kill")
+            print("ℹ  No existing iperf3 process to kill")
     except Exception as e:
         print(f"⚠️  pkill error: {e}")
 
-    time.sleep(2)
+    time.sleep(3)
     
     # NE PAS ajouter le processus Python au cgroup !
     # Lancer iperf3 puis l'ajouter explicitement
@@ -174,19 +174,19 @@ def restart_iperf3_server():
         print(f"✅ iperf3 server started (PID: {process.pid})")
         
         # Ajouter SEULEMENT iperf3 au cgroup
-        time.sleep(1)  # Laisser iperf3 démarrer
+        time.sleep(0.1)  # Laisser iperf3 démarrer
         try:
             cgroup_file = "/tmp/cgroupv2/foo/cgroup.procs"
             if os.path.exists(cgroup_file):
                 with open(cgroup_file, "a") as f:
                     f.write(str(process.pid) + "\n")  # ← SEULEMENT iperf3 !
-                print(f"📋 ONLY iperf3 process (PID: {process.pid}) added to cgroup")
+                print(f" ONLY iperf3 process (PID: {process.pid}) added to cgroup")
             else:
-                print("⚠️  cgroup file not found")
+                print("  cgroup file not found")
         except Exception as e:
-            print(f"⚠️  Failed to add iperf3 to cgroup: {e}")
+            print(f"  Failed to add iperf3 to cgroup: {e}")
         
-        time.sleep(1)
+        #time.sleep(3)
         return True
         
     except Exception as e:

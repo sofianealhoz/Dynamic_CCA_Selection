@@ -128,7 +128,6 @@ print(f"Shape originale: {shap_values.shape}")
 # CONVERSION FORCÉE vers le format liste multi-classes
 if shap_values.shape == (sample_size, len(X.columns), 4):
     print("🔄 Conversion vers format liste multi-classes...")
-    
     # Convertir (678, 12, 4) vers liste de 4 arrays (678, 12)
     shap_values_converted = [
         shap_values[:, :, 0],  # Classe datacenter
@@ -150,7 +149,8 @@ if isinstance(shap_values, list) and len(shap_values) == 4:
     print("✅ Structure SHAP correcte détectée")
     
     # 1. Summary plot global
-    plt.figure(figsize=(12, 8))
+    #####################################################################
+    plt.figure(figsize=(13, 8))
     shap.summary_plot(shap_values, X_test_sample, feature_names=X.columns, 
                      class_names=label_encoder_label.classes_, show=False)
     plt.title("SHAP Summary Plot - Importance des features par classe")
@@ -159,7 +159,9 @@ if isinstance(shap_values, list) and len(shap_values) == 4:
     plt.close()
     
     # 2. Importance globale (moyenne des valeurs absolues)
-    plt.figure(figsize=(12, 8))
+    #####################################################################
+
+    plt.figure(figsize=(13, 8))
     
     # Calculer l'importance moyenne pour toutes les classes
     global_importance = np.mean([np.abs(shap_values[i]).mean(axis=0) for i in range(4)], axis=0)
@@ -225,7 +227,8 @@ else:
     print("❌ Conversion échouée - utilisation du fallback RandomForest")
     
     # Fallback : utiliser l'importance native de RandomForest
-    plt.figure(figsize=(12, 8))
+    #####################################################################
+    plt.figure(figsize=(13, 8))
     rf_importance = best_model.feature_importances_
     feature_importance_df = pd.DataFrame({
         'feature': X.columns,

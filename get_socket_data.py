@@ -52,6 +52,7 @@ struct ipv4_data_t {
     u64 sk_max_pacing_rate;
     u64 sk_pacing_rate;
     u64 delivered;
+    u64 bytes_acked;
 
 };
 BPF_PERF_OUTPUT(ipv4_events);
@@ -86,6 +87,8 @@ struct ipv6_data_t {
     u64 sk_max_pacing_rate;
     u64 sk_pacing_rate;
     u64 delivered;
+    u64 bytes_acked;
+
 };
 BPF_PERF_OUTPUT(ipv6_events);
 
@@ -176,7 +179,8 @@ struct_init = {'ipv4':
                         data4.snd_cwnd = tp->snd_cwnd;
                         data4.rcv_buf = skp->sk_rcvbuf;
                         data4.snd_buf = skp->sk_sndbuf;
-                        data4.state = state; """
+                        data4.state = state; 
+                        data4.bytes_acked = tp->bytes_acked;"""
                     },
                'ipv6':
                    {'trace': """
@@ -214,7 +218,8 @@ struct_init = {'ipv4':
                     data6.snd_cwnd = tp->snd_cwnd;
                     data6.rcv_buf = skp->sk_rcvbuf;
                     data6.snd_buf = skp->sk_sndbuf;
-                    data6.state = state;"""
+                    data6.state = state;
+                    data4.bytes_acked = tp->bytes_acked;"""
                     }
                }
 
@@ -258,7 +263,9 @@ class Data_ipv4(ct.Structure):
         ("snd_cwnd", ct.c_ulonglong),
         ("sk_max_pacing_rate", ct.c_ulonglong),
         ("sk_pacing_rate", ct.c_ulonglong),
-        ("delivered", ct.c_ulonglong)
+        ("delivered", ct.c_ulonglong),
+        ("bytes_acked", ct.c_ulonglong)
+
         
     ]
 
@@ -293,7 +300,9 @@ class Data_ipv6(ct.Structure):
         ("snd_cwnd", ct.c_ulonglong),
         ("sk_max_pacing_rate", ct.c_ulonglong),
         ("sk_pacing_rate", ct.c_ulonglong),
-        ("delivered", ct.c_ulonglong)
+        ("delivered", ct.c_ulonglong),
+        ("bytes_acked", ct.c_ulonglong)
+
 
     ]
 
@@ -340,7 +349,7 @@ writer.writerow([
     "total_lost", "sack_out", "total_retrans",
     "rcv_buf", "snd_buf", "snd_cwnd",
     "sk_pacing_rate", "sk_max_pacing_rate",
-    "delivered"
+    "delivered","bytes_acked"
 ])
 
 last_ipv4_sample = None
@@ -373,7 +382,7 @@ def write_ipv4_to_csv(event):
         event.total_lost, event.sack_out, event.total_retrans,
         event.rcv_buf, event.snd_buf, event.snd_cwnd,
         event.sk_pacing_rate, event.sk_max_pacing_rate,
-        event.delivered
+        event.delivered, event.bytes_acked
     ])
 
 def write_ipv6_to_csv(event):
@@ -393,7 +402,7 @@ def write_ipv6_to_csv(event):
         event.total_lost, event.sack_out, event.total_retrans,
         event.rcv_buf, event.snd_buf, event.snd_cwnd,
         event.sk_pacing_rate, event.sk_max_pacing_rate,
-        event.delivered
+        event.delivered, event.bytes_acked
     ])
 
 # initialize BPF

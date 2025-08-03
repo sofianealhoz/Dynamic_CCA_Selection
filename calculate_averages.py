@@ -16,19 +16,26 @@ def calculate_rtt_averages(csv_file):
         rtt_mean = df['rtt'].mean()
 
         # Throughput: mean of delivered difference per sample
-        if 'delivered' in df.columns:
-            delivered_diff = df['delivered'].diff().dropna()
-            delivered_diff = delivered_diff[delivered_diff > 0]
-            throughput_mean = delivered_diff.mean()
-            throughput_min = delivered_diff.min()
-            print(f"Average throughput (delivered per sample): {throughput_mean:.2f}")
-            print(f"Min throughput (delivered per sample): {throughput_min:.2f}")
+        # if 'delivered' in df.columns:
+        #     delivered_diff = df['delivered'].diff().dropna()
+        #     delivered_diff = delivered_diff[delivered_diff > 0]
+        #     throughput_mean = delivered_diff.mean()
+        #     throughput_min = delivered_diff.min()
+        #     print(f"Average throughput (delivered per sample): {throughput_mean:.2f}")
+        #     print(f"Min throughput (delivered per sample): {throughput_min:.2f}")
+        # else:
+        #     throughput_mean = None
+        if 'bytes_acked' in df.columns:
+            bytes_acked_diff = df['bytes_acked'].diff().dropna()
+            bytes_acked_diff = bytes_acked_diff[bytes_acked_diff > 0]
+            throughput_mean = bytes_acked_diff.mean()
+            throughput_mean_mbps = throughput_mean*8/0.1
+            print(f"Average throughput (mbps): {throughput_mean_mbps:.2f}")
         else:
-            throughput_mean = None
-
+            throughput_mean_mbps = None
         print(f"Average SRTT: {srtt_mean:.2f} µs")
         print(f"Average RTT:  {rtt_mean:.2f} µs")
-        return {'srtt_mean': round(srtt_mean,2), 'rtt_mean': round(rtt_mean,2), 'throughput_mean': round(throughput_mean,2)}
+        return {'srtt_mean': round(srtt_mean,2), 'rtt_mean': round(rtt_mean,2), 'throughput_mean_mbps': round(throughput_mean_mbps,2)}
 
     except FileNotFoundError:
         print(f"Error: File {csv_file} not found")
@@ -51,16 +58,24 @@ def upsert_value(g_csv_file, algo, env, colonne, valeurs):
             df.loc[mask, colonne] = valeur
         else:
             # On prépare une nouvelle ligne vide
+            # nouvelle_ligne = {
+            #     'algo': algo,
+            #     'env': env,
+            #     'metric': metric,
+            #     '1min_algo': None,
+            #     '1min_solution': None,
+            #     '3min_algo': None,
+            #     '3min_solution': None,
+            #     '5min_algo': None,
+            #     '5min_solution': None
+            # }
             nouvelle_ligne = {
                 'algo': algo,
                 'env': env,
                 'metric': metric,
                 '1min_algo': None,
-                '1min_solution': None,
                 '3min_algo': None,
-                '3min_solution': None,
                 '5min_algo': None,
-                '5min_solution': None
             }
             nouvelle_ligne[colonne] = valeur
             df = pd.concat([df, pd.DataFrame([nouvelle_ligne])], ignore_index=True)
