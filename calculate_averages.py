@@ -29,13 +29,13 @@ def calculate_rtt_averages(csv_file):
             bytes_acked_diff = df['bytes_acked'].diff().dropna()
             bytes_acked_diff = bytes_acked_diff[bytes_acked_diff > 0]
             throughput_mean = bytes_acked_diff.mean()
-            throughput_mean_mbps = throughput_mean*8/0.1
-            print(f"Average throughput (mbps): {throughput_mean_mbps:.2f}")
+            throughput_mbps_mean = throughput_mean*8*000000000.1
+            print(f"Average throughput (mbps): {throughput_mbps_mean:.2f}")
         else:
-            throughput_mean_mbps = None
+            throughput_mbps_mean = None
         print(f"Average SRTT: {srtt_mean:.2f} µs")
         print(f"Average RTT:  {rtt_mean:.2f} µs")
-        return {'srtt_mean': round(srtt_mean,2), 'rtt_mean': round(rtt_mean,2), 'throughput_mean_mbps': round(throughput_mean_mbps,2)}
+        return {'srtt_mean': round(srtt_mean,2), 'rtt_mean': round(rtt_mean,2), 'throughput_mbps_mean': round(throughput_mbps_mean,2)}
 
     except FileNotFoundError:
         print(f"Error: File {csv_file} not found")
@@ -46,8 +46,8 @@ def calculate_rtt_averages(csv_file):
 
 def upsert_value(g_csv_file, algo, env, colonne, valeurs):
     df = pd.read_csv(g_csv_file)
-    metrics = ['throughput', 'srtt']  
-    for i in range (2):
+    metrics = ['throughput_mbps', 'srtt']
+    for i in range (2): 
         metric = metrics[i] 
         valeur = valeurs[f"{metric}_mean"] 
         # 2. Création du masque pour trouver la ligne

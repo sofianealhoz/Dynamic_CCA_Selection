@@ -219,7 +219,7 @@ struct_init = {'ipv4':
                     data6.rcv_buf = skp->sk_rcvbuf;
                     data6.snd_buf = skp->sk_sndbuf;
                     data6.state = state;
-                    data4.bytes_acked = tp->bytes_acked;"""
+                    data6.bytes_acked = tp->bytes_acked;"""
                     }
                }
 
