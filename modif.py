@@ -19,7 +19,7 @@ df = pd.read_csv(filename)
 df = df.drop(['mdev_max','rttvar','total_lost','total_retrans','rcv_buf','snd_buf', 'recv_rtt', 'sk_max_pacing_rate'], axis=1)
 #df = df.drop(['recv_rtt', 'sk_max_pacing_rate'], axis=1)
 #df.loc[:, 'connection_id'] = '46.135.12.136'
-#df['connection_id'] = df['connection_id'].str.split(';').str[0]
+df['label'] = 'datacenter'
 
 
 # Sauvegarder directement dans le même fichier

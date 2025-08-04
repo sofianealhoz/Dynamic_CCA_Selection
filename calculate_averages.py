@@ -29,7 +29,7 @@ def calculate_rtt_averages(csv_file):
             bytes_acked_diff = df['bytes_acked'].diff().dropna()
             bytes_acked_diff = bytes_acked_diff[bytes_acked_diff > 0]
             throughput_mean = bytes_acked_diff.mean()
-            throughput_mbps_mean = throughput_mean*8*000000000.1
+            throughput_mbps_mean = throughput_mean*8*0.00000001
             print(f"Average throughput (mbps): {throughput_mbps_mean:.2f}")
         else:
             throughput_mbps_mean = None

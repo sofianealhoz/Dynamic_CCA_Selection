@@ -76,7 +76,7 @@ def update_pinned_map(connection_prediction):
         'fibre': 'bbr',
         'mobile': 'bbr', 
         'datacenter': 'dctcp',
-        'satellite' : 'bbrv2',
+        'satellite' : 'bbr2',
         'dsl' : 'cubic'
     }
     

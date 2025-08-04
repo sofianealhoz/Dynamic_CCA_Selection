@@ -150,18 +150,18 @@ if isinstance(shap_values, list) and len(shap_values) == 4:
     
     # 1. Summary plot global
     #####################################################################
-    plt.figure(figsize=(13, 8))
+    plt.figure(figsize=(14, 8))
     shap.summary_plot(shap_values, X_test_sample, feature_names=X.columns, 
                      class_names=label_encoder_label.classes_, show=False)
     plt.title("SHAP Summary Plot - Importance des features par classe")
     plt.tight_layout()
-    plt.savefig('shap_summary_plot-2.png', dpi=150, bbox_inches='tight')
+    plt.savefig('shap_summary_plot-3.png', dpi=150, bbox_inches='tight')
     plt.close()
     
     # 2. Importance globale (moyenne des valeurs absolues)
     #####################################################################
 
-    plt.figure(figsize=(13, 8))
+    plt.figure(figsize=(14, 8))
     
     # Calculer l'importance moyenne pour toutes les classes
     global_importance = np.mean([np.abs(shap_values[i]).mean(axis=0) for i in range(4)], axis=0)
@@ -175,7 +175,7 @@ if isinstance(shap_values, list) and len(shap_values) == 4:
     plt.title("Importance Globale des Features TCP (SHAP)")
     plt.xlabel("Importance SHAP moyenne")
     plt.tight_layout()
-    plt.savefig('shap_feature_importance-2.png', dpi=150, bbox_inches='tight')
+    plt.savefig('shap_feature_importance-3.png', dpi=150, bbox_inches='tight')
     plt.close()
     
     # 3. Analyse par classe
@@ -206,7 +206,7 @@ if isinstance(shap_values, list) and len(shap_values) == 4:
         axes[i].set_xlabel('Importance SHAP')
     
     plt.tight_layout()
-    plt.savefig('shap_comparison_by_class-2.png', dpi=150, bbox_inches='tight')
+    plt.savefig('shap_comparison_by_class-3.png', dpi=150, bbox_inches='tight')
     plt.close()
     
     # 5. BONUS : Exemple d'explication individuelle
@@ -228,7 +228,7 @@ else:
     
     # Fallback : utiliser l'importance native de RandomForest
     #####################################################################
-    plt.figure(figsize=(13, 8))
+    plt.figure(figsize=(14, 8))
     rf_importance = best_model.feature_importances_
     feature_importance_df = pd.DataFrame({
         'feature': X.columns,
@@ -239,7 +239,7 @@ else:
     plt.title("Feature Importance - RandomForest (natif)")
     plt.xlabel("Importance")
     plt.tight_layout()
-    plt.savefig('rf_feature_importance-2.png', dpi=150, bbox_inches='tight')
+    plt.savefig('rf_feature_importance-3.png', dpi=150, bbox_inches='tight')
     plt.close()
     
     print("\n=== TOP 5 FEATURES (RandomForest natif) ===")

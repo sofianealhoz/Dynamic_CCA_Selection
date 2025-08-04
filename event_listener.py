@@ -102,7 +102,7 @@ else:
     col = str(int(duration_total)) + 'min_algo'
 #SOURCE = "vm-fibre___"  
 #filename = f"2benchmarck_{benchmark_type}_{SOURCE}_{int(duration_total)}min.csv"
-filename = f"mbpsauto_benchmarck_{benchmark_type}_{SOURCE}_{int(duration_total)}min_{current_time}.csv"
+filename = f"mbpsfauto_benchmarck_{benchmark_type}_{SOURCE}_{int(duration_total)}min_{current_time}.csv"
 
 def trigger_analysis(dst_ip_str):
     global analysis_in_progress
