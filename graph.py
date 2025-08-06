@@ -13,7 +13,9 @@ def calculate_gain(algo_value, solution_value):
     return ((solution_value - algo_value) / algo_value) * 100
 
 # Prepare data for graphs
-total_algos = ['cubic', 'cubic_', 'cubic_codel', 'bbr', 'bbr_', 'bbr_codel', 'reno','dctcp','dctcp_','bbr2','highspeed','hybla','illinois','scalable','vegas','westwood']
+#total_algos = ['cubic', 'cubic_', 'cubic_codel', 'bbr', 'bbr_', 'bbr_codel', 'reno','dctcp','dctcp_','bbr2','highspeed','hybla','illinois','scalable','vegas','westwood']
+total_algos = ['cubic','bbr','reno','dctcp','bbr2','highspeed','hybla','illinois','scalable','vegas','westwood',"sol"]
+
 
 algorithms = {
     "algos1": ['bbr', 'bbr2', 'highspeed', 'westwood'],
@@ -24,7 +26,7 @@ algorithms = {
 #algos3 = ['dctcp', 'hybla', 'vegas']
 #environments = ['fibre', 'datacenter','wi-fi']
 #environments = ['fibre', 'datacenter', 'wi-fi', 'mobile']
-environments = ['datacenter','wi-fi'] 
+environments = ['datacenter','wi-fi','mobile'] 
 metrics = ['throughput', 'srtt']
 time_periods = ['1min', '3min', '5min', 'total']
 
@@ -118,32 +120,50 @@ def create_algorithms_values_chart_by_environment(environment, dur):
     # Mettre en évidence la solution
     bars1[-1].set_color('darkgreen')
     bars1[-1].set_alpha(0.9)
-    
+    print("wshsmrtest")
+
+# Dans create_algorithms_values_chart_by_environment()
+# Remplacer la section échelle throughput par :
+
     valid_throughput = [v for v in throughput_values if v > 0]
     if valid_throughput:
         min_val = min(valid_throughput)
         max_val = max(valid_throughput)
         range_val = max_val - min_val
+        
+        print(f"🔧 DEBUG - Min: {min_val:.0f}, Max: {max_val:.0f}, Range: {range_val:.0f}")
 
-        if range_val < 2:
-            margin = 0.3
-            step = 0.2
-        elif range_val < 5:
-            margin = 0.5
-            step = 0.5
-        else:
-            margin = 1.0
-            step = 1.0
+        # ✅ ADAPTATION pour des valeurs Mbps (milliers)
+        if range_val < 1000:         # < 1000 Mbps de différence
+            margin = 200             # Marge de 200 Mbps
+            step = 200               # Graduations tous les 200 Mbps
+            print(f"🔧 DEBUG - Using small range settings (Mbps)")
+        elif range_val < 3000:       # < 3000 Mbps de différence  
+            margin = 500             # Marge de 500 Mbps
+            step = 500               # Graduations tous les 500 Mbps
+            print(f"🔧 DEBUG - Using medium range settings (Mbps)")
+        elif range_val < 10000:      # < 10000 Mbps de différence
+            margin = 1000            # Marge de 1000 Mbps
+            step = 1000              # Graduations tous les 1000 Mbps
+            print(f"🔧 DEBUG - Using large range settings (Mbps)")
+        else:                        # > 10000 Mbps de différence
+            margin = 2000            # Marge de 2000 Mbps
+            step = 2000              # Graduations tous les 2000 Mbps
+            print(f"🔧 DEBUG - Using very large range settings (Mbps)")
 
-        y_min = max(0, min_val - margin)
+        y_min = max(0, min_val - margin)  
         y_max = max_val + margin
-
+        
         ax1.set_ylim(y_min, y_max)
-        ax1.set_yticks(np.arange(y_min, y_max + step, step)) 
+        
+        # Créer les graduations
+        ticks = np.arange(y_min, y_max + step, step)
+        ax1.set_yticks(ticks)
+        
+        print(f"📊 Throughput scale: {y_min:.0f} to {y_max:.0f} Mbps (step: {step})")
 
-
-    # Personnaliser le graphique throughput
-    ax1.set_ylabel('Throughput (Mbps)', fontsize=12)
+    # ✅ CORRECTION : Changer le label de l'axe Y
+    ax1.set_ylabel('Throughput (Mbps)', fontsize=12)  # ← Gbps au lieu de Mbps !
     ax1.set_title(f'Average Throughput by Algorithm - {environment.title()}', fontsize=14, fontweight='bold')
     ax1.set_xticks(x_pos)
     ax1.set_xticklabels([algo.upper() for algo in all_algos_with_solution], rotation=45, ha='right')

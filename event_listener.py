@@ -169,7 +169,7 @@ def trigger_analysis(dst_ip_str):
             )
             print(f"--- ✅ Prediction for: {dst_ip_str} terminated ---")
             subprocess.run(
-            ["python3", "calculate_averages.py", f"f_{filename}", "benchmark_data_troughput_and_srtt.csv", algo, env, col],
+            ["python3", "calculate_averages.py", f"f_{filename}", "benchmark_data_troughput_and_srtt.csv", algo, env, col, benchmark_type],
             check=True, timeout=10
             )
             print(f"--- ✅ Benchmark done ---")
@@ -200,7 +200,7 @@ def trigger_analysis(dst_ip_str):
     
             subprocess.run(
             #["python3", "calculate_averages.py", f"cubic5_{filename}"],
-            ["python3", "calculate_averages.py", filename, "benchmark_data_troughput_and_srtt.csv", algo, env, col],
+            ["python3", "calculate_averages.py", filename, "benchmark_data_troughput_and_srtt.csv", algo, env, col, benchmark_type],
             check=True, timeout=10
             )
             print(f"--- ✅ Benchmark for fixed cca done ---")

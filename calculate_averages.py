@@ -29,13 +29,13 @@ def calculate_rtt_averages(csv_file):
             bytes_acked_diff = df['bytes_acked'].diff().dropna()
             bytes_acked_diff = bytes_acked_diff[bytes_acked_diff > 0]
             throughput_mean = bytes_acked_diff.mean()
-            throughput_mbps_mean = throughput_mean*8*0.00000001
+            throughput_mbps_mean = throughput_mean*8*0.00001
             print(f"Average throughput (mbps): {throughput_mbps_mean:.2f}")
         else:
             throughput_mbps_mean = None
         print(f"Average SRTT: {srtt_mean:.2f} µs")
         print(f"Average RTT:  {rtt_mean:.2f} µs")
-        return {'srtt_mean': round(srtt_mean,2), 'rtt_mean': round(rtt_mean,2), 'throughput_mbps_mean': round(throughput_mbps_mean,2)}
+        return {'srtt_mean': round(srtt_mean,2), 'rtt_mean': round(rtt_mean,2), 'throughput': round(throughput_mbps_mean,2)}
 
     except FileNotFoundError:
         print(f"Error: File {csv_file} not found")
@@ -44,9 +44,11 @@ def calculate_rtt_averages(csv_file):
         print(f"Error during processing: {e}")
         return None
 
-def upsert_value(g_csv_file, algo, env, colonne, valeurs):
+def upsert_value(g_csv_file, algo, env, colonne, valeurs, benchmark_type):
+    if benchmark_type == "s":
+        algo = "sol"
     df = pd.read_csv(g_csv_file)
-    metrics = ['throughput_mbps', 'srtt']
+    metrics = ['throughput', 'srtt']
     for i in range (2): 
         metric = metrics[i] 
         valeur = valeurs[f"{metric}_mean"] 
@@ -89,4 +91,4 @@ if __name__ == "__main__":
     csv_file = sys.argv[1]
     graph_csv_file = sys.argv[2]
     results = calculate_rtt_averages(csv_file)
-    upsert_value(graph_csv_file, sys.argv[3], sys.argv[4], sys.argv[5], calculate_rtt_averages(csv_file))
+    upsert_value(graph_csv_file, sys.argv[3], sys.argv[4], sys.argv[5], calculate_rtt_averages(csv_file), sys.argv[6])
