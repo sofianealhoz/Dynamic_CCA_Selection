@@ -119,6 +119,29 @@ def create_algorithms_values_chart_by_environment(environment, dur):
     bars1[-1].set_color('darkgreen')
     bars1[-1].set_alpha(0.9)
     
+    valid_throughput = [v for v in throughput_values if v > 0]
+    if valid_throughput:
+        min_val = min(valid_throughput)
+        max_val = max(valid_throughput)
+        range_val = max_val - min_val
+
+        if range_val < 2:
+            margin = 0.3
+            step = 0.2
+        elif range_val < 5:
+            margin = 0.5
+            step = 0.5
+        else:
+            margin = 1.0
+            step = 1.0
+
+        y_min = max(0, min_val - margin)
+        y_max = max_val + margin
+
+        ax1.set_ylim(y_min, y_max)
+        ax1.set_yticks(np.arange(y_min, y_max + step, step)) 
+
+
     # Personnaliser le graphique throughput
     ax1.set_ylabel('Throughput (Mbps)', fontsize=12)
     ax1.set_title(f'Average Throughput by Algorithm - {environment.title()}', fontsize=14, fontweight='bold')
