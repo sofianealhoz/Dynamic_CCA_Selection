@@ -14,13 +14,13 @@ def run_all_benchmarks():
 
     bench_type = "c"
     durations = [1, 3, 5]  # minutes
-    algos = ["bbr", "bbr2", "cubic", "dctcp", "highspeed", "hybla", 
-             "illinois", "reno", "scalable", "vegas", "westwood", "yeah", "sol"]
+    algos = ["sol", "cubic", "bbr", "bbr2", "dctcp", "highspeed", "hybla", 
+             "illinois", "reno", "scalable", "vegas", "westwood", "yeah"]
    
     #####################################
     #####################################
 
-    env = "fibre2"
+    env = "wifi30"
     
     #####################################
     #####################################

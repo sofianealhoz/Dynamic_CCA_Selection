@@ -102,7 +102,7 @@ current_time = datetime.now().strftime("%I%p").lower()
 def start_load_sock_ops():
     print("🚀 Starting load_sock_ops with full logging...")
     proc = subprocess.Popen(
-        ["./load_sock_ops", "-l", "/tmp/cgroupv2/foo", "./tcp_changecc_kern.o"],
+        ["/root/bbr/samples/bpf/load_sock_ops", "-l", "/tmp/cgroupv2/foo", "/root/bbr/samples/bpf/tcp_changecc_kern.o"],
         start_new_session=True,
         stdout=subprocess.PIPE,
         stderr=subprocess.STDOUT,
