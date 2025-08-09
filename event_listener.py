@@ -97,6 +97,39 @@ duration_total = duration_benchmark + duration_predict
 SOURCE = algo + "-" + env
 current_time = datetime.now().strftime("%I%p").lower()
 
+def start_load_sock_ops():
+    proc = subprocess.Popen(
+        ["./load_sock_ops", "-l", "/tmp/cgroupv2/foo", "./tcp_changecc_kern.o"],
+        start_new_session=True,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True
+    )
+    time.sleep(2)
+    if proc.poll() is not None:
+        out, err = proc.communicate()
+        print(f"❌ load_sock_ops crashed (rc={proc.returncode})")
+        print(out.strip())
+        print(err.strip())
+        return None
+    print(f"✅ load_sock_ops started (PID {proc.pid})")
+    return proc
+
+def stop_load_sock_ops(proc, reason="normal"):
+    if not proc or proc.poll() is not None:
+        return
+    print(f"🧹 Stopping load_sock_ops ({reason})...")
+    for sig in (signal.SIGINT, signal.SIGTERM, signal.SIGKILL):
+        try:
+            os.killpg(proc.pid, sig)
+            proc.wait(timeout=5)
+            print(f"   Stopped with {sig.name}")
+            break
+        except Exception:
+            continue
+    else:
+        print("   ⚠ Could not stop load_sock_ops cleanly")
+
 if benchmark_type == 's':
     col = str(int(duration_total)) + 'min_solution'
 else:
@@ -120,11 +153,11 @@ def trigger_analysis(dst_ip_str):
     
     print(f"\n--- Process start for: {dst_ip_str} ---")
     if benchmark_type == 's' :
-        p_ebpf = subprocess.Popen(
-        ["./load_sock_ops", "-l", "/tmp/cgroupv2/foo", "./tcp_changecc_kern.o"],
-        start_new_session=True,
-        stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True
-        )
+        p_ebpf = start_load_sock_ops()
+        if p_ebpf is None:
+            analysis_in_progress = False
+            return
+
 
         try:
             # Phase 1: Prédiction
@@ -162,6 +195,10 @@ def trigger_analysis(dst_ip_str):
             )
             print(f"--- ✅ Prediction for: {dst_ip_str} terminated ---")
             p1.wait()
+            stop_load_sock_ops(p_ebpf, reason="post-processing")
+            p_ebpf = None  # Marqué comme arrêté
+
+
             print("2. Launching modif.py")
             subprocess.run(
                 ["python3", "modif.py", filename],  # ← Nom correct
@@ -183,20 +220,7 @@ def trigger_analysis(dst_ip_str):
         except Exception as e:
             print(f"   ❌ An error occured durung the process: {e}")
         finally:
-            # 3) À la toute fin, on imite Ctrl+C sur load_sock_ops (son groupe)
             analysis_in_progress = False
-            try:
-                os.killpg(p_ebpf.pid, signal.SIGINT)
-                p_ebpf.wait(timeout=5)
-                print("loadsockops killed")
-            except Exception:
-                try:
-                    os.killpg(p_ebpf.pid, signal.SIGTERM)
-                    p_ebpf.wait(timeout=3)
-                finally:
-                    if p_ebpf.poll() is None:
-                        os.killpg(p_ebpf.pid, signal.SIGKILL)
-                        p_ebpf.wait()
  
     else:
         try:
