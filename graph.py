@@ -26,7 +26,7 @@ algorithms = {
 #algos3 = ['dctcp', 'hybla', 'vegas']
 #environments = ['fibre', 'datacenter','wi-fi']
 #environments = ['fibre', 'datacenter', 'wi-fi', 'mobile']
-environments = ['datacenter','wi-fi','mobile'] 
+environments = ['datacenter','wi-fi','mobile', 'fibre'] 
 metrics = ['throughput', 'srtt']
 time_periods = ['1min', '3min', '5min', 'total']
 

@@ -13,6 +13,7 @@ import subprocess
 from socket import inet_ntop, AF_INET, AF_INET6
 import shutil
 from datetime import datetime
+import signal
 
 
 # define BPF program
@@ -119,9 +120,14 @@ def trigger_analysis(dst_ip_str):
     
     print(f"\n--- Process start for: {dst_ip_str} ---")
     if benchmark_type == 's' :
+        p_ebpf = subprocess.Popen(
+        ["./load_sock_ops", "-l", "/tmp/cgroupv2/foo", "./tcp_changecc_kern.o"],
+        start_new_session=True,
+        stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True
+        )
+
         try:
             # Phase 1: Prédiction
-
             print(f"1. Launching get_socket_data.py to predict cca for: {dst_ip_str}")
             subprocess.run(
                 ["python3", "get_socket_data.py", "unknown", filename, "s1", str(duration_benchmark), SOURCE],
@@ -174,11 +180,24 @@ def trigger_analysis(dst_ip_str):
             )
             print(f"--- ✅ Benchmark done ---")
     #f_ --> checker dans vm: les f_auto / f_... voir si pas pb de nom
-
         except Exception as e:
             print(f"   ❌ An error occured durung the process: {e}")
         finally:
+            # 3) À la toute fin, on imite Ctrl+C sur load_sock_ops (son groupe)
             analysis_in_progress = False
+            try:
+                os.killpg(p_ebpf.pid, signal.SIGINT)
+                p_ebpf.wait(timeout=5)
+                print("loadsockops killed")
+            except Exception:
+                try:
+                    os.killpg(p_ebpf.pid, signal.SIGTERM)
+                    p_ebpf.wait(timeout=3)
+                finally:
+                    if p_ebpf.poll() is None:
+                        os.killpg(p_ebpf.pid, signal.SIGKILL)
+                        p_ebpf.wait()
+ 
     else:
         try:
 
