@@ -100,63 +100,36 @@ SOURCE = algo + "-" + env
 current_time = datetime.now().strftime("%I%p").lower()
 
 def start_load_sock_ops():
-    # Créer répertoire logs si inexistant
     logs_dir = "logs_loadsockops"
     os.makedirs(logs_dir, exist_ok=True)
     
-    # Fichiers de logs horodatés
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     proc_log_file = os.path.join(logs_dir, f"load_sock_ops_proc_{timestamp}.log")
-    bpf_log_file = os.path.join(logs_dir, f"load_sock_ops_bpf_{timestamp}.log")
     
-    print(f"🚀 Starting load_sock_ops...")
+    print(f"🚀 Starting load_sock_ops (simplified)...")
     print(f"📄 Process logs -> {proc_log_file}")
-    print(f"📄 BPF logs -> {bpf_log_file}")
     
-    # Ouvrir fichiers de logs
+    # Ouvrir fichier de log
     proc_log = open(proc_log_file, 'w', buffering=1)
-    bpf_log = open(bpf_log_file, 'w', buffering=1)
     
-    # Lancer load_sock_ops avec redirection vers fichier
+    # ⚠️ SANS thread trace_pipe pour éliminer les conflits
     proc = subprocess.Popen(
-        ["/root/bbr/samples/bpf/load_sock_ops", "-l", "/tmp/cgroupv2/foo", "/root/bbr/samples/bpf/tcp_changecc_kern.o"],
+        ["/root/bbr/samples/bpf/load_sock_ops", "/tmp/cgroupv2/foo", "/root/bbr/samples/bpf/tcp_changecc_kern.o"],  # ← SANS -l
         start_new_session=True,
-        stdout=proc_log,  # ← Directement dans le fichier
-        stderr=proc_log,  # ← stderr aussi dans le fichier
+        stdout=proc_log,
+        stderr=proc_log,
         text=True
     )
     
-    # Thread pour capturer trace_pipe BPF
-    def capture_bpf_logs():
-        trace_path = "/sys/kernel/debug/tracing/trace_pipe"
-        if os.path.exists(trace_path):
-            try:
-                with open(trace_path, 'r') as trace:
-                    for line in trace:
-                        if "bpf_basertt" in line or "CCA" in line or "load_sock_ops" in line:
-                            timestamp_line = f"{datetime.now().strftime('%H:%M:%S.%f')[:-3]} {line}"
-                            bpf_log.write(timestamp_line)
-                            bpf_log.flush()
-            except Exception as e:
-                bpf_log.write(f"⚠️ Cannot read trace_pipe: {e}\n")
-                bpf_log.flush()
-    
-    # Lancer thread BPF en arrière-plan
-    bpf_thread = threading.Thread(target=capture_bpf_logs, daemon=True)
-    bpf_thread.start()
-    
-    time.sleep(2)
+    time.sleep(3)  # Plus de temps d'attente
     if proc.poll() is not None:
         proc_log.close()
-        bpf_log.close()
         print(f"❌ load_sock_ops crashed (rc={proc.returncode}) - check {proc_log_file}")
         return None
     
     print(f"✅ load_sock_ops started (PID {proc.pid})")
-    
-    # Stocker les fichiers ouverts pour fermeture ultérieure
-    proc._log_files = (proc_log, bpf_log)
-    proc._log_paths = (proc_log_file, bpf_log_file)
+    proc._log_files = (proc_log,)
+    proc._log_paths = (proc_log_file,)
     
     return proc
 
@@ -210,7 +183,7 @@ def stop_load_sock_ops(proc, reason="normal"):
         proc_log_file, bpf_log_file = proc._log_paths
         print(f"📄 Logs saved: {proc_log_file}")
         print(f"📄 BPF logs: {bpf_log_file}")
-        
+
 if benchmark_type == 's':
     col = str(int(duration_total)) + 'min_solution'
 else:
