@@ -67,7 +67,14 @@ int bpf_basertt(struct bpf_sock_ops *skops)
 
         if (con_str != NULL) {
             bpf_printk("Setting CCA to %s for IP: %u (FIRST TIME)\n", con_str, remote_ip_nbo);
+            char cong[16];
+            bpf_getsockopt(skops, SOL_TCP, TCP_CONGESTION, cong, sizeof(cong));
+            bpf_printk("before cc:%s\n", cong);
+
             ret = bpf_setsockopt(skops, SOL_TCP, TCP_CONGESTION, con_str, 16);
+
+            bpf_getsockopt(skops, SOL_TCP, TCP_CONGESTION, cong, sizeof(cong));
+            bpf_printk("after cc:%s\n", cong);
             
             if (ret == 0) {
                 // Marquer cette connexion comme configurée
