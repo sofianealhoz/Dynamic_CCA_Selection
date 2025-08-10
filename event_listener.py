@@ -100,81 +100,117 @@ SOURCE = algo + "-" + env
 current_time = datetime.now().strftime("%I%p").lower()
 
 def start_load_sock_ops():
-    print("🚀 Starting load_sock_ops with full logging...")
+    # Créer répertoire logs si inexistant
+    logs_dir = "logs_loadsockops"
+    os.makedirs(logs_dir, exist_ok=True)
+    
+    # Fichiers de logs horodatés
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    proc_log_file = os.path.join(logs_dir, f"load_sock_ops_proc_{timestamp}.log")
+    bpf_log_file = os.path.join(logs_dir, f"load_sock_ops_bpf_{timestamp}.log")
+    
+    print(f"🚀 Starting load_sock_ops...")
+    print(f"📄 Process logs -> {proc_log_file}")
+    print(f"📄 BPF logs -> {bpf_log_file}")
+    
+    # Ouvrir fichiers de logs
+    proc_log = open(proc_log_file, 'w', buffering=1)
+    bpf_log = open(bpf_log_file, 'w', buffering=1)
+    
+    # Lancer load_sock_ops avec redirection vers fichier
     proc = subprocess.Popen(
         ["/root/bbr/samples/bpf/load_sock_ops", "-l", "/tmp/cgroupv2/foo", "/root/bbr/samples/bpf/tcp_changecc_kern.o"],
         start_new_session=True,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.STDOUT,
+        stdout=proc_log,  # ← Directement dans le fichier
+        stderr=proc_log,  # ← stderr aussi dans le fichier
         text=True
     )
     
-    # Thread 1: Logs du binaire
-    def print_proc_logs():
-        for line in proc.stdout:
-            print(f"[load_sock_ops] {line.strip()}")
-    threading.Thread(target=print_proc_logs, daemon=True).start()
-    
-    # Thread 2: Logs BPF (trace_pipe)
-    def print_bpf_logs():
+    # Thread pour capturer trace_pipe BPF
+    def capture_bpf_logs():
         trace_path = "/sys/kernel/debug/tracing/trace_pipe"
         if os.path.exists(trace_path):
             try:
-                with open(trace_path, 'r') as f:
-                    for line in f:
-                        if "bpf_basertt" in line or "CCA" in line:
-                            print(f"[BPF] {line.strip()}")
+                with open(trace_path, 'r') as trace:
+                    for line in trace:
+                        if "bpf_basertt" in line or "CCA" in line or "load_sock_ops" in line:
+                            timestamp_line = f"{datetime.now().strftime('%H:%M:%S.%f')[:-3]} {line}"
+                            bpf_log.write(timestamp_line)
+                            bpf_log.flush()
             except Exception as e:
-                print(f"⚠️ Cannot read trace_pipe: {e}")
-    threading.Thread(target=print_bpf_logs, daemon=True).start()
+                bpf_log.write(f"⚠️ Cannot read trace_pipe: {e}\n")
+                bpf_log.flush()
+    
+    # Lancer thread BPF en arrière-plan
+    bpf_thread = threading.Thread(target=capture_bpf_logs, daemon=True)
+    bpf_thread.start()
     
     time.sleep(2)
     if proc.poll() is not None:
-        print(f"❌ load_sock_ops crashed (rc={proc.returncode})")
+        proc_log.close()
+        bpf_log.close()
+        print(f"❌ load_sock_ops crashed (rc={proc.returncode}) - check {proc_log_file}")
         return None
+    
     print(f"✅ load_sock_ops started (PID {proc.pid})")
+    
+    # Stocker les fichiers ouverts pour fermeture ultérieure
+    proc._log_files = (proc_log, bpf_log)
+    proc._log_paths = (proc_log_file, bpf_log_file)
+    
     return proc
 
 def stop_load_sock_ops(proc, reason="normal"):
     if not proc:
         return
     if proc.poll() is not None:
-        # déjà mort
         return
-    print(f"🧹 Stopping load_sock_ops ({reason})...")
-    # Lire ce qui traîne pour éviter blocage sur pipe plein
-    def drain():
-        try:
-            out, err = proc.communicate(timeout=0.05)
-            if out:
-                print(f"[load_sock_ops stdout tail]\n{out[-400:]}")
-            if err:
-                print(f"[load_sock_ops stderr tail]\n{err[-400:]}")
-        except Exception:
-            pass
-
-    signals = [signal.SIGINT, signal.SIGTERM, signal.SIGKILL]
-    for sig in signals:
-        try:
-            pgid = os.getpgid(proc.pid)
-        except Exception:
-            pgid = proc.pid
-        try:
-            os.killpg(pgid, sig)
-            print(f"  Sent {sig.name} to PGID {pgid}")
-        except ProcessLookupError:
+    
+    print(f"🧹 Stopping load_sock_ops ({reason}) via SIGINT...")
+    
+    try:
+        pgid = os.getpgid(proc.pid)
+    except Exception:
+        pgid = proc.pid
+    
+    # Envoyer SIGINT (Ctrl+C style)
+    try:
+        os.killpg(pgid, signal.SIGINT)
+        print(f"  Sent SIGINT to PGID {pgid}")
+    except ProcessLookupError:
+        return
+    
+    # Attendre sortie propre (5s max)
+    for _ in range(25):
+        if proc.poll() is not None:
+            print(f"  ✅ Exited cleanly (rc={proc.returncode})")
             break
-        # Attendre qu’il meure
-        for _ in range(10):
-            if proc.poll() is not None:
-                print(f"  ✅ Stopped with {sig.name} (rc={proc.returncode})")
-                drain()
-                return
-            time.sleep(0.1)
-        drain()
-    if proc.poll() is None:
-        print("  ❌ Could not stop load_sock_ops after escalation")
-
+        time.sleep(0.2)
+    else:
+        # Escalade si nécessaire
+        print("  ⚠️ Still running, sending SIGTERM...")
+        try:
+            os.killpg(pgid, signal.SIGTERM)
+            proc.wait(timeout=3)
+            print(f"  ✅ Exited after SIGTERM (rc={proc.returncode})")
+        except:
+            print("  ❌ Forcing SIGKILL...")
+            try:
+                os.killpg(pgid, signal.SIGKILL)
+                proc.wait(timeout=1)
+            except:
+                pass
+    
+    # Fermer fichiers de logs
+    if hasattr(proc, '_log_files'):
+        proc_log, bpf_log = proc._log_files
+        proc_log.close()
+        bpf_log.close()
+        
+        proc_log_file, bpf_log_file = proc._log_paths
+        print(f"📄 Logs saved: {proc_log_file}")
+        print(f"📄 BPF logs: {bpf_log_file}")
+        
 if benchmark_type == 's':
     col = str(int(duration_total)) + 'min_solution'
 else:
