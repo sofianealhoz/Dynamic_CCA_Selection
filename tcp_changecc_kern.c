@@ -47,10 +47,17 @@ int bpf_basertt(struct bpf_sock_ops *skops)
     char *con_str;
     int ret;
     __u8 flag;
+    bpf_printk("sockops op=%d\n", op);
 
+    bpf_printk("test read trace pipe");
     switch (op)
     {
-    case BPF_SOCK_OPS_TCP_ACK_CB:
+    //case BPF_SOCK_OPS_TCP_ACK_CB:
+    //case BPF_SOCK_OPS_TCL_CLOSE_CB:
+
+    //case BPF_SOCK_OPS_ACTIVE_ESTABLISHED_CB:
+    case BPF_SOCK_OPS_PASSIVE_ESTABLISHED_CB:
+        bpf_printk("inside case");
         // Vérifier si cette connexion a déjà été configurée
         already_configured = bpf_map_lookup_elem(&configured_connections, &remote_ip_nbo);
         
