@@ -192,12 +192,6 @@ int main(int argc, char **argv)
     init_map(key_cong_map_fd);
     pin_map_to_filesystem(key_cong_map_fd, "key_cong_map");
     
-    // Épingler le ring buffer
-    struct bpf_map *log_events = bpf_object__find_map_by_name(obj, "log_events");
-    if (log_events) {
-        int log_events_fd = bpf_map__fd(log_events);
-        pin_map_to_filesystem(log_events_fd, "log_events");
-    }
 
     snprintf(pin_path_global, sizeof(pin_path_global), "/sys/fs/bpf/key_cong_map");
     cg_fd_global = cg_fd;
