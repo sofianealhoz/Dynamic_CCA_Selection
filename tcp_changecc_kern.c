@@ -19,7 +19,30 @@ struct connection_tuple {
     __u32 dst_ip; // Doit être en network byte order
 };
 
+// Structure pour une entrée de log
+struct log_entry {
+    __u32 timestamp;        // timestamp en millisecondes
+    __u32 remote_ip;        // IP de la connexion
+    __u32 op;              // Opération sockops
+    char message[48];       // Message de log
+    int ret_code;          // Code de retour (pour les erreurs)
+};
 
+// Map circulaire pour stocker les logs (consultable avec bpftool)
+struct {
+    __uint(type, BPF_MAP_TYPE_ARRAY);
+    __uint(max_entries, 100);  // 100 entrées de log max
+    __type(key, __u32);
+    __type(value, struct log_entry);
+} bpf_logs SEC(".maps");
+
+// Index circulaire pour la map des logs
+struct {
+    __uint(type, BPF_MAP_TYPE_ARRAY);
+    __uint(max_entries, 1);
+    __type(key, __u32);
+    __type(value, __u32);
+} log_index SEC(".maps");
 
 struct {
     __uint(type, BPF_MAP_TYPE_HASH);
@@ -37,6 +60,43 @@ struct {
     __type(value, __u8);
 } configured_connections SEC(".maps");
 
+// Helper pour ajouter un log dans la map
+static void add_log(const char *msg, __u32 remote_ip, __u32 op, int ret_code) {
+    __u32 zero = 0;
+    __u32 *current_index_ptr = bpf_map_lookup_elem(&log_index, &zero);
+    if (!current_index_ptr) {
+        // Initialiser l'index à 0 si pas trouvé
+        __u32 init_index = 0;
+        bpf_map_update_elem(&log_index, &zero, &init_index, BPF_ANY);
+        current_index_ptr = &init_index;
+    }
+    
+    __u32 current_index = *current_index_ptr;
+    __u32 slot = current_index % 100;  // Index circulaire (0-99)
+    
+    struct log_entry entry = {
+        .timestamp = bpf_ktime_get_ns() / 1000000,  // ms
+        .remote_ip = remote_ip,
+        .op = op,
+        .ret_code = ret_code
+    };
+    
+    // Copier le message (sécurisé)
+    #pragma unroll
+    for (int i = 0; i < 47; i++) {
+        if (msg[i] == '\0') break;
+        entry.message[i] = msg[i];
+    }
+    entry.message[47] = '\0';  // Assurer null termination
+    
+    // Sauvegarder l'entrée
+    bpf_map_update_elem(&bpf_logs, &slot, &entry, BPF_ANY);
+    
+    // Incrémenter l'index
+    __u32 new_index = current_index + 1;
+    bpf_map_update_elem(&log_index, &zero, &new_index, BPF_ANY);
+}
+
 SEC("sockops")
 int bpf_basertt(struct bpf_sock_ops *skops)
 {
@@ -47,9 +107,8 @@ int bpf_basertt(struct bpf_sock_ops *skops)
     char *con_str;
     int ret;
     __u8 flag;
-    bpf_printk("sockops op=%d\n", op);
+    add_log("sockops_event", remote_ip_nbo, op, 0);
 
-    bpf_printk("test read trace pipe");
     switch (op)
     {
     //case BPF_SOCK_OPS_TCP_ACK_CB:
@@ -57,7 +116,7 @@ int bpf_basertt(struct bpf_sock_ops *skops)
 
     //case BPF_SOCK_OPS_ACTIVE_ESTABLISHED_CB:
     case BPF_SOCK_OPS_PASSIVE_ESTABLISHED_CB:
-        bpf_printk("inside case");
+        add_log("inside_passive_established", remote_ip_nbo, op, 0);
         // Vérifier si cette connexion a déjà été configurée
         already_configured = bpf_map_lookup_elem(&configured_connections, &remote_ip_nbo);
         
@@ -66,30 +125,30 @@ int bpf_basertt(struct bpf_sock_ops *skops)
             return 1;
         }
 
-        bpf_printk("First ACK for IP: %u\n", remote_ip_nbo);
+        add_log("first_connection_detected", remote_ip_nbo, op, 0);
 
         cc_id.dst_ip = remote_ip_nbo;
         
         con_str = bpf_map_lookup_elem(&key_cong_map, &cc_id);
 
         if (con_str != NULL) {
-            bpf_printk("Setting CCA to %s for IP: %u (FIRST TIME)\n", con_str, remote_ip_nbo);
+            add_log("cca_rule_found", remote_ip_nbo, op, 0);
             char cong[16];
             bpf_getsockopt(skops, SOL_TCP, TCP_CONGESTION, cong, sizeof(cong));
-            bpf_printk("before cc:%s\n", cong);
+            add_log("before_cca_change", remote_ip_nbo, op, 0);
 
             ret = bpf_setsockopt(skops, SOL_TCP, TCP_CONGESTION, con_str, 16);
 
             bpf_getsockopt(skops, SOL_TCP, TCP_CONGESTION, cong, sizeof(cong));
-            bpf_printk("after cc:%s\n", cong);
+            add_log("after_cca_change", remote_ip_nbo, op, ret);
             
             if (ret == 0) {
                 // Marquer cette connexion comme configurée
                 flag = 1;
                 bpf_map_update_elem(&configured_connections, &remote_ip_nbo, &flag, BPF_ANY);
-                bpf_printk("✅ CCA %s applied successfully\n", con_str);
+                add_log("cca_applied_successfully", remote_ip_nbo, op, 0);
             } else {
-                bpf_printk("❌ Failed to apply CCA %s (ret=%d)\n", con_str, ret);
+                add_log("cca_apply_failed", remote_ip_nbo, op, ret);
             }
         }
         break;

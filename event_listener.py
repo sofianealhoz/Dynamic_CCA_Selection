@@ -121,7 +121,7 @@ def start_load_sock_ops():
         text=True
     )
     
-    time.sleep(20)  # Plus de temps d'attente
+    time.sleep(5)  # Plus de temps d'attente
     if proc.poll() is not None:
         proc_log.close()
         print(f"❌ load_sock_ops crashed (rc={proc.returncode}) - check {proc_log_file}")
