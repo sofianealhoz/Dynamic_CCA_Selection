@@ -87,21 +87,7 @@ void pin_map_to_filesystem(int map_fd, const char* map_name) {
     } else {
         printf("✅ Map pinned to %s\n", pin_path);
     }
-}// Dans main(), après l'épinglage de key_cong_map, ajoutez :
-
-    // Épingler la map des logs BPF
-    struct bpf_map *bpf_logs_map = bpf_object__find_map_by_name(obj, "bpf_logs");
-    if (bpf_logs_map) {
-        int bpf_logs_fd = bpf_map__fd(bpf_logs_map);
-        pin_map_to_filesystem(bpf_logs_fd, "bpf_logs");
-    }
-
-    // Épingler la map de l'index des logs
-    struct bpf_map *log_index_map = bpf_object__find_map_by_name(obj, "log_index");
-    if (log_index_map) {
-        int log_index_fd = bpf_map__fd(log_index_map);
-        pin_map_to_filesystem(log_index_fd, "log_index");
-    }
+}
 
 void read_trace_pipe(void)
 {
