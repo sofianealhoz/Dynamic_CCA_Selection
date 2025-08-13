@@ -92,6 +92,9 @@ int bpf_basertt(struct bpf_sock_ops *skops)
                 bpf_printk("❌ Failed to apply CCA %s (ret=%d)\n", con_str, ret);
             }
         }
+        else {
+            bpf_printk("Fail to set CCA to %s for IP: %u (FIRST TIME)\n", con_str, remote_ip_nbo);
+        }
         break;
     }
 

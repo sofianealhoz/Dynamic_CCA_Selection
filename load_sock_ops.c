@@ -16,7 +16,6 @@
 #include <sys/types.h>
 #include <arpa/inet.h> 
 
-#define DEBUGFS "/sys/kernel/debug/tracing/"
 
 #include <signal.h>
 
@@ -89,27 +88,8 @@ void pin_map_to_filesystem(int map_fd, const char* map_name) {
     }
 }
 
-void read_trace_pipe(void)
-{
-    int trace_fd;
 
-    trace_fd = open(DEBUGFS "trace_pipe", O_RDONLY, 0);
-    if (trace_fd < 0)
-        return;
 
-    while (1) {
-        static char buf[4096];
-        ssize_t sz;
-
-        sz = read(trace_fd, buf, sizeof(buf));
-        if (sz > 0) {
-            buf[sz] = 0;
-            puts(buf);
-        }
-    }
-    
-    close(trace_fd);
-}
 
 int main(int argc, char **argv)
 {
@@ -206,18 +186,6 @@ int main(int argc, char **argv)
                error, strerror(errno));
         bpf_object__close(obj);
         return 5;
-    }
-    else if (logFlag) {
-        int ret_from_fork;
-        if ((ret_from_fork = fork()) == -1) {
-            perror("fork");
-            exit(EXIT_FAILURE);
-        }
-        else if (ret_from_fork == 0) {
-            printf("enter read trace pipe\n");
-            read_trace_pipe();
-            exit(0);
-        }
     }
     
     printf("Program attached successfully. Press Ctrl+C to detach and exit.\n");

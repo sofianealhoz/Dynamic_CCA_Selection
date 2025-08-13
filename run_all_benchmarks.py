@@ -20,7 +20,7 @@ def run_all_benchmarks():
     #####################################
     #####################################
 
-    env = "wifi30"
+    env = "fibre10limit"
     
     #####################################
     #####################################
@@ -69,7 +69,7 @@ def run_all_benchmarks():
                 print(f"  Could not set {algo} as default, continuing anyway...")
                 continue
                 # On continue quand même car le BPF peut forcer l'algorithme
-            restart_iperf3_server()  # ← AJOUT
+            #restart_iperf3_server()  # ← AJOUT
 
             # 3. Délai supplémentaire
             #print(f" Final preparation (2s)...")
@@ -80,11 +80,14 @@ def run_all_benchmarks():
             
             print(f" Starting event_listener...")
             try:
-                print(f" Please run: iperf3 -c <target_ip> -p 5201 -t {duration_min * 60}")
+                #print(f" Please run: iperf3 -c <target_ip> -p 5201 -t {duration_min * 60}")
                 
                 # Lancer event_listener avec le CCA déjà configuré
+                print("avant call")
                 success = call_event_listener(str(bench_type), str(duration_min), str(algo), str(env))
-                
+                print("après call")
+                #time.sleep(10)
+                #print("après sleep")
                 end_time = datetime.now()
                 duration_actual = (end_time - start_time).total_seconds()
                 
@@ -106,7 +109,7 @@ def run_all_benchmarks():
             # Pause entre tests
             if current_test < total_tests:
                 print(f" Waiting 10s before next test...")
-                time.sleep(10)
+                #time.sleep(10)
     
     print(f"\n Benchmark suite completed!")
     print(f" Generate graphs with: python3 graph.py")
@@ -145,53 +148,7 @@ def set_default_congestion_control(algo):
 
 
 
-def restart_iperf3_server():
-    """
-    Version qui n'ajoute QUE iperf3 au cgroup
-    """
-    print(" Restarting iperf3 server...")
-    
-    # Kill
-    try:
-        result = subprocess.run(["pkill", "-f", "iperf3"], timeout=5)
-        if result.returncode == 0:
-            print(" iperf3 process killed")
-        else:
-            print("ℹ  No existing iperf3 process to kill")
-    except Exception as e:
-        print(f"⚠️  pkill error: {e}")
 
-    time.sleep(3)
-    
-    # NE PAS ajouter le processus Python au cgroup !
-    # Lancer iperf3 puis l'ajouter explicitement
-    
-    try:
-        process = subprocess.Popen([
-            "iperf3", "-s", "-p", "5201"
-        ], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
-        
-        print(f"✅ iperf3 server started (PID: {process.pid})")
-        
-        # Ajouter SEULEMENT iperf3 au cgroup
-        time.sleep(0.1)  # Laisser iperf3 démarrer
-        try:
-            cgroup_file = "/tmp/cgroupv2/foo/cgroup.procs"
-            if os.path.exists(cgroup_file):
-                with open(cgroup_file, "a") as f:
-                    f.write(str(process.pid) + "\n")  # ← SEULEMENT iperf3 !
-                print(f" ONLY iperf3 process (PID: {process.pid}) added to cgroup")
-            else:
-                print("  cgroup file not found")
-        except Exception as e:
-            print(f"  Failed to add iperf3 to cgroup: {e}")
-        
-        #time.sleep(3)
-        return True
-        
-    except Exception as e:
-        print(f"❌ Failed to restart iperf3: {e}")
-        return False
 
 
 
@@ -231,10 +188,11 @@ def call_event_listener(bench_type, duration_min, algo, env):
         result = subprocess.run(
             ["python3", "event_listener.py", bench_type, duration_min, algo, env],
             timeout=timeout_seconds,  # ← CORRIGÉ
-            capture_output=True,
-            text=True
         )
-        
+        #time.sleep(7)
+        print("avant ipperf3")
+        # restart_iperf3_server()  # ← AJOUT
+        print("après iperf3")
         if result.returncode == 0:
             print(f"✅ event_listener completed successfully")
             return True

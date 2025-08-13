@@ -99,37 +99,64 @@ duration_total = duration_benchmark + duration_predict
 SOURCE = algo + "-" + env
 current_time = datetime.now().strftime("%I%p").lower()
 
-def start_load_sock_ops():
-    logs_dir = "logs_loadsockops"
-    os.makedirs(logs_dir, exist_ok=True)
+def restart_iperf3_server():
+    """
+    Version qui n'ajoute QUE iperf3 au cgroup
+    """
+    print(" Restarting iperf3 server...")
     
-    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    proc_log_file = os.path.join(logs_dir, f"load_sock_ops_proc_{timestamp}.log")
+    # Kill
+    try:
+        result = subprocess.run(["pkill", "-f", "iperf3"], timeout=5)
+        if result.returncode == 0:
+            print(" iperf3 process killed")
+        else:
+            print("ℹ  No existing iperf3 process to kill")
+    except Exception as e:
+        print(f"⚠️  pkill error: {e}")
+
+    time.sleep(3)
+    
+    # NE PAS ajouter le processus Python au cgroup !
+    # Lancer iperf3 puis l'ajouter explicitement
+    
+    try:
+        cmd = "echo $$; echo $$ >> /tmp/cgroupv2/foo/cgroup.procs; exec iperf3 -s"
+        proc = subprocess.Popen(["/bin/bash", "-lc", cmd])
+    except Exception as e:
+        print(f"❌ Failed to restart iperf3: {e}")
+
+def start_load_sock_ops():
+    #logs_dir = "logs_loadsockops"
+    #os.makedirs(logs_dir, exist_ok=True)
+    
+    #timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    #proc_log_file = os.path.join(logs_dir, f"load_sock_ops_proc_{timestamp}.log")
     
     print(f"🚀 Starting load_sock_ops (simplified)...")
-    print(f"📄 Process logs -> {proc_log_file}")
+    #print(f"📄 Process logs -> {proc_log_file}")
     
     # Ouvrir fichier de log
-    proc_log = open(proc_log_file, 'w', buffering=1)
+    #proc_log = open(proc_log_file, 'w', buffering=1)
     
     # ⚠️ SANS thread trace_pipe pour éliminer les conflits
     proc = subprocess.Popen(
         ["/root/bbr/samples/bpf/load_sock_ops", "/tmp/cgroupv2/foo", "/root/bbr/samples/bpf/tcp_changecc_kern.o"],  # ← SANS -l
         start_new_session=True,
-        stdout=proc_log,
-        stderr=proc_log,
-        text=True
     )
     
+    
+
     time.sleep(5)  # Plus de temps d'attente
+
     if proc.poll() is not None:
-        proc_log.close()
-        print(f"❌ load_sock_ops crashed (rc={proc.returncode}) - check {proc_log_file}")
+        #proc_log.close()
+        print(f"❌ load_sock_ops crashed (rc={proc.returncode})")
         return None
     
     print(f"✅ load_sock_ops started (PID {proc.pid})")
-    proc._log_files = (proc_log,)
-    proc._log_paths = (proc_log_file,)
+    #proc._log_files = (proc_log,)
+    #proc._log_paths = (proc_log_file,)
     
     return proc
 
@@ -208,6 +235,10 @@ def trigger_analysis(dst_ip_str):
     print(f"\n--- Process start for: {dst_ip_str} ---")
     if benchmark_type == 's' :
         p_ebpf = start_load_sock_ops()
+        #time.sleep(5)
+        print("avantiperf3")
+        restart_iperf3_server()  # ← AJOUT
+        print("après iperf3")
         if p_ebpf is None:
             analysis_in_progress = False
             return
@@ -332,11 +363,13 @@ def handle_ipv6_event(cpu, data, size):
 print("Initialising BPF program")
 b = BPF(text=bpf_text)
 b.attach_kprobe(event="tcp_ack", fn_name="trace_ack")
+print("bloc")
 b["ipv4_events"].open_perf_buffer(handle_ipv4_event, page_cnt=512)
 b["ipv6_events"].open_perf_buffer(handle_ipv6_event, page_cnt=512)
+#time.sleep(10)
+restart_iperf3_server()  # ← AJOUT
 
 print("Waiting for TCP events on port 5201")
-
 try:
     while True:
         b.perf_buffer_poll(timeout=0)
