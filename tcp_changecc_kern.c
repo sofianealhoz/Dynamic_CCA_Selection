@@ -68,9 +68,14 @@ int bpf_basertt(struct bpf_sock_ops *skops)
 
         bpf_printk("First ACK for IP: %u\n", remote_ip_nbo);
 
-        cc_id.dst_ip = remote_ip_nbo;
+        // 🔥 TEST HARDCODÉ : Utiliser la MÊME valeur que dans load_sock_ops.c
+        struct connection_tuple hardcoded_key;
+        hardcoded_key.dst_ip = 0xA0D97CC8;  // MÊME valeur que my_ip dans load_sock_ops.c
         
-        con_str = bpf_map_lookup_elem(&key_cong_map, &cc_id);
+        bpf_printk("=== HARDCODED TEST ===");
+        bpf_printk("Testing with hardcoded key: 0x%08X (%u)", hardcoded_key.dst_ip, hardcoded_key.dst_ip);
+        
+        char *hardcoded_result = bpf_map_lookup_elem(&key_cong_map, &hardcoded_key);
 
         if (con_str != NULL) {
             bpf_printk("Setting CCA to %s for IP: %u (FIRST TIME)\n", con_str, remote_ip_nbo);

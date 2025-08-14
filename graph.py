@@ -26,7 +26,7 @@ algorithms = {
 #algos3 = ['dctcp', 'hybla', 'vegas']
 #environments = ['fibre', 'datacenter','wi-fi']
 #environments = ['fibre', 'datacenter', 'wi-fi', 'mobile']
-environments = ['datacenter','wi-fi','mobile', 'fibre'] 
+environments = ['datacenter','wi-fi','wi-fi_limit','mobile', 'fibre', 'fibre2', 'fibre_limit'] 
 metrics = ['throughput', 'srtt']
 time_periods = ['1min', '3min', '5min', 'total']
 
@@ -328,6 +328,10 @@ for file_name, algos in algorithms.items():
             bars2 = ax.bar(x - 0.5*width, gains_datacenter, width, label='Datacenter', alpha=0.8, color='lightcoral')
             bars3 = ax.bar(x + 0.5*width, gains_wifi, width, label='Wi-Fi', alpha=0.8, color='mediumseagreen')
             bars4 = ax.bar(x + 1.5*width, gains_mobile, width, label='Mobile', alpha=0.8, color='orange')
+            bars5 = ax.bar(x + 1.5*width, gains_mobile, width, label='Wi-Fi_limit', alpha=0.8, color='orange')
+            bars6 = ax.bar(x + 1.5*width, gains_mobile, width, label='Fibre2', alpha=0.8, color='orange')
+            bars7 = ax.bar(x + 1.5*width, gains_mobile, width, label='Fibre_limit', alpha=0.8, color='orange')
+
             
             # Customize the chart
             ax.set_xlabel('Time period')

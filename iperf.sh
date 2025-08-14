@@ -5,7 +5,7 @@ DATA_SIZE="15000000M"
 
 while true; do
     echo "attempting co"
-    iperf3 -c "$SERVER_IP" -n "$DATA_SIZE" -R -b 100M
+    iperf3 -c "$SERVER_IP" -n "$DATA_SIZE" -R
 
     exit_code=$?
 
