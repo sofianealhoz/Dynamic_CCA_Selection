@@ -72,12 +72,12 @@ def update_pinned_map(connection_prediction):
         return
     
     connection_type_CCA_map = {
-        'wifi': 'cubic',
-        'fibre': 'bbr',
-        'mobile': 'bbr', 
-        'datacenter': 'dctcp',
+        'wifi': 'bbr2',
+        'fibre': 'bbr2',
+        'mobile': 'bbr2', 
+        'datacenter': 'bbr2',
         'satellite' : 'bbr2',
-        'dsl' : 'cubic'
+        'dsl' : 'bbr2'
     }
     
     recommended_cca = connection_type_CCA_map.get(connection_prediction, 'cubic')

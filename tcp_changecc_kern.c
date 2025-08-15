@@ -47,35 +47,39 @@ int bpf_basertt(struct bpf_sock_ops *skops)
     char *con_str;
     int ret;
     __u8 flag;
-    bpf_printk("sockops op=%d\n", op);
+    //bpf_printk("sockops op=%d\n", op);
 
-    bpf_printk("test read trace pipe");
+    //bpf_printk("test read trace pipe");
     switch (op)
     {
     //case BPF_SOCK_OPS_TCP_ACK_CB:
     //case BPF_SOCK_OPS_TCL_CLOSE_CB:
 
     //case BPF_SOCK_OPS_ACTIVE_ESTABLISHED_CB:
-    case BPF_SOCK_OPS_PASSIVE_ESTABLISHED_CB:
-        bpf_printk("inside case");
+    case BPF_SOCK_OPS_PASSIVE_ESTABLISHED_CB: {
+        int flags=0;
+
+        flags = BPF_SOCK_OPS_RTT_CB_FLAG;
+
+        int ret = bpf_sock_ops_cb_flags_set(skops, flags);
+        bpf_printk("cb_flags_set: flags=0x%x ret=%d\n", flags, ret);
+        break;
+    }
+    case BPF_SOCK_OPS_RTT_CB:
         // Vérifier si cette connexion a déjà été configurée
         already_configured = bpf_map_lookup_elem(&configured_connections, &remote_ip_nbo);
         
         if (already_configured != NULL) {
             // Déjà configurée, ne rien faire
+            //bpf_printk("CCA already set");
             return 1;
         }
 
-        bpf_printk("First ACK for IP: %u\n", remote_ip_nbo);
+        bpf_printk("ACK for IP: %u\n", remote_ip_nbo);
 
-        // 🔥 TEST HARDCODÉ : Utiliser la MÊME valeur que dans load_sock_ops.c
-        struct connection_tuple hardcoded_key;
-        hardcoded_key.dst_ip = 0xA0D97CC8;  // MÊME valeur que my_ip dans load_sock_ops.c
+        cc_id.dst_ip = remote_ip_nbo;
         
-        bpf_printk("=== HARDCODED TEST ===");
-        bpf_printk("Testing with hardcoded key: 0x%08X (%u)", hardcoded_key.dst_ip, hardcoded_key.dst_ip);
-        
-        char *hardcoded_result = bpf_map_lookup_elem(&key_cong_map, &hardcoded_key);
+        con_str = bpf_map_lookup_elem(&key_cong_map, &cc_id);
 
         if (con_str != NULL) {
             bpf_printk("Setting CCA to %s for IP: %u (FIRST TIME)\n", con_str, remote_ip_nbo);
