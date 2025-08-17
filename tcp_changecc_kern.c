@@ -75,7 +75,7 @@ int bpf_basertt(struct bpf_sock_ops *skops)
             return 1;
         }
 
-        bpf_printk("ACK for IP: %u\n", remote_ip_nbo);
+        //bpf_printk("ACK for IP: %u\n", remote_ip_nbo);
 
         cc_id.dst_ip = remote_ip_nbo;
         
@@ -102,7 +102,7 @@ int bpf_basertt(struct bpf_sock_ops *skops)
             }
         }
         else {
-            bpf_printk("Fail to set CCA to %s for IP: %u (FIRST TIME)\n", con_str, remote_ip_nbo);
+            //bpf_printk("Fail to set CCA to %s for IP: %u (FIRST TIME)\n", con_str, remote_ip_nbo);
         }
         break;
     }
