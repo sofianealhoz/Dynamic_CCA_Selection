@@ -1,0 +1,38 @@
+# Environnement Python
+.venv/
+env/
+__pycache__/
+*.py[cod]
+*.sqlite3
+db.sqlite3
+
+# Django
+*.log
+staticfiles/
+media/
+*.pot
+
+# Node / Vue
+frontend/node_modules/
+frontend/dist/
+frontend/.vite/
+frontend/npm-debug.log*
+frontend/yarn-*.log*
+
+# Build Vue copiée dans Django (si tu préfères la régénérer)
+web/benchmarks/static/benchmarks/vue/
+
+# OS / éditeurs
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+
+# Tests/coverage
+.coverage
+htmlcov/
+auto_algorithms_values_comparison_*.png
+frontend/src/service/
+node_modules/
+package-lock.json
+package.json
