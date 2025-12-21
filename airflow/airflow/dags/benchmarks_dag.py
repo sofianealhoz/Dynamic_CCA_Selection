@@ -27,7 +27,7 @@ def collect_pngs():
 
 dag = DAG(
     dag_id="benchmarks_png_pipeline",
-    schedule_interval=None,
+    schedule_interval="0 7 * * *",
     start_date=datetime(2026, 1, 1),
     catchup=False,
     default_args={
