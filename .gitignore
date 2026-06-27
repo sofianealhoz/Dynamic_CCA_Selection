@@ -1,0 +1,31 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+dist/
+*.egg-info/
+.venv/
+venv/
+env/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# C / eBPF build artifacts
+*.o
+*.obj
+
+# Jupyter
+.ipynb_checkpoints/
+
+# Editors / OS
+*.swp
+*.swo
+*.orig
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
