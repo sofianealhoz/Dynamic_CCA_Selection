@@ -1,5 +1,6 @@
-import { Component, inject, signal } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { AsyncPipe } from '@angular/common';
+import { Router } from '@angular/router';
 import { Observable, of } from 'rxjs';
 import { catchError, map, startWith } from 'rxjs/operators';
 
@@ -19,10 +20,6 @@ import { RunsViewState } from './view-state';
     <h2>Version pipe async</h2>
     <button (click)="reload()">Recharger</button>
 
-    @if (selected(); as run) {
-      <p>Selection : {{ run.cca }} sur {{ run.network }}</p>
-    }
-
     @if (state$ | async; as state) {
       @switch (state.status) {
         @case ('loading') {
@@ -35,11 +32,7 @@ import { RunsViewState } from './view-state';
           @if (state.runs.length === 0) {
             <p>Aucun run pour ce filtre.</p>
           } @else {
-            <runs-table
-              [runs]="state.runs"
-              [selectedId]="selected()?.id ?? null"
-              (select)="selected.set($event)"
-            />
+            <runs-table [runs]="state.runs" (select)="openDetail($event)" />
           }
         }
       }
@@ -49,11 +42,15 @@ import { RunsViewState } from './view-state';
 export class RunsAsync {
   private readonly benchmarks = inject(BenchmarkService);
 
+  private readonly router = inject(Router);
+
   state$: Observable<RunsViewState> = this.buildState();
 
-  // La selection appartient au parent, pas a la table : c'est lui qui la stocke
-  // et qui la redescend en entree. La table ne fait que la refleter.
-  readonly selected = signal<BenchmarkRun | null>(null);
+  // La table n'a pas change : elle signale toujours "on a clique sur ce run".
+  // Seule l'interpretation change : ce n'est plus un champ local, c'est une URL.
+  openDetail(run: BenchmarkRun): void {
+    this.router.navigate(['/runs', run.id]);
+  }
 
   private buildState(): Observable<RunsViewState> {
     return this.benchmarks.getRuns().pipe(

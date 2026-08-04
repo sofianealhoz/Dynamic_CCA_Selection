@@ -16,6 +16,14 @@ export class BenchmarkService {
   failNext = false;
   returnEmpty = false;
 
+  getRun(id: string): Observable<BenchmarkRun> {
+    const found = BENCHMARK_RUNS.find((run) => run.id === id);
+    if (!found) {
+      return throwError(() => new Error(`Run ${id} introuvable`)).pipe(delay(400));
+    }
+    return of(found).pipe(delay(400));
+  }
+
   getRuns(): Observable<BenchmarkRun[]> {
     if (this.failNext) {
       return throwError(() => new Error('Le service de benchmarks est injoignable')).pipe(delay(600));

@@ -1,24 +1,14 @@
-import { Component, inject } from '@angular/core';
+import { Component } from '@angular/core';
+import { RouterOutlet } from '@angular/router';
 
-import { BenchmarkService } from './benchmarks/benchmark.service';
-import { RunsAsync } from './benchmarks/runs-async';
-import { RunsSignals } from './benchmarks/runs-signals';
-
+/**
+ * Coquille de l'application : ce qui ne change jamais (le titre),
+ * plus l'emplacement ou le routeur monte le composant de la route courante.
+ */
 @Component({
   selector: 'app-root',
-  imports: [RunsAsync, RunsSignals],
+  imports: [RouterOutlet],
   templateUrl: './app.html',
   styleUrl: './app.css'
 })
-export class App {
-  readonly benchmarks = inject(BenchmarkService);
-
-  // Leviers de demo : ils changent ce que renverra le PROCHAIN appel au service.
-  setFail(value: boolean): void {
-    this.benchmarks.failNext = value;
-  }
-
-  setEmpty(value: boolean): void {
-    this.benchmarks.returnEmpty = value;
-  }
-}
+export class App {}

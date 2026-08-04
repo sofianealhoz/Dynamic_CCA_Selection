@@ -1,18 +1,4 @@
 <h1>Runs de benchmark</h1>
 
-<fieldset>
-  <legend>Simuler la reponse du serveur, puis Recharger</legend>
-  <label>
-    <input type="checkbox" (change)="setFail($any($event.target).checked)" />
-    la requete echoue
-  </label>
-  <label>
-    <input type="checkbox" (change)="setEmpty($any($event.target).checked)" />
-    le serveur repond 0 run
-  </label>
-</fieldset>
-
-<div class="columns">
-  <section><runs-async /></section>
-  <section><runs-signals /></section>
-</div>
+<!-- Le routeur remplace le contenu de cette balise selon l'URL courante. -->
+<router-outlet />

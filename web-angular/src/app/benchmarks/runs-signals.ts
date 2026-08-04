@@ -1,5 +1,6 @@
 import { Component, DestroyRef, inject, signal } from '@angular/core';
 import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
+import { Router } from '@angular/router';
 
 import { BenchmarkService } from './benchmark.service';
 import { BenchmarkRun } from './benchmark.model';
@@ -17,10 +18,6 @@ import { RunsTable } from './runs-table';
     <h2>Version signals</h2>
     <button (click)="load()">Recharger</button>
 
-    @if (selected(); as run) {
-      <p>Selection : {{ run.cca }} sur {{ run.network }}</p>
-    }
-
     @if (loading()) {
       <p>Chargement des runs...</p>
     } @else if (error()) {
@@ -28,11 +25,7 @@ import { RunsTable } from './runs-table';
     } @else if (runs().length === 0) {
       <p>Aucun run pour ce filtre.</p>
     } @else {
-      <runs-table
-        [runs]="runs()"
-        [selectedId]="selected()?.id ?? null"
-        (select)="selected.set($event)"
-      />
+      <runs-table [runs]="runs()" (select)="openDetail($event)" />
     }
   `,
 })
@@ -42,8 +35,13 @@ export class RunsSignals {
 
   readonly loading = signal(true);
   readonly error = signal<string | null>(null);
+  private readonly router = inject(Router);
+
   readonly runs = signal<BenchmarkRun[]>([]);
-  readonly selected = signal<BenchmarkRun | null>(null);
+
+  openDetail(run: BenchmarkRun): void {
+    this.router.navigate(['/runs', run.id]);
+  }
 
   constructor() {
     this.load();
