@@ -1,0 +1,24 @@
+<h1>Runs de benchmark</h1>
+
+<table>
+  <thead>
+    <tr>
+      <th>Algorithme</th>
+      <th>Reseau</th>
+      <th>Duree</th>
+      <th>Debit (Mbps)</th>
+      <th>sRTT (ms)</th>
+    </tr>
+  </thead>
+  <tbody>
+    @for (run of runs$ | async; track run.id) {
+      <tr>
+        <td>{{ run.cca }}</td>
+        <td>{{ run.network }}</td>
+        <td>{{ run.durationMin }} min</td>
+        <td>{{ run.throughputMbps }}</td>
+        <td>{{ run.srttMs }}</td>
+      </tr>
+    }
+  </tbody>
+</table>

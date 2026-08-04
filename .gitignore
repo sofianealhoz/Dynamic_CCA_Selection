@@ -36,3 +36,13 @@ frontend/src/service/
 node_modules/
 package-lock.json
 package.json
+
+# Notes de travail front, locales
+NOTES.md
+
+# App Angular : les regles package*.json ci-dessus sont trop larges
+!web-angular/package.json
+!web-angular/package-lock.json
+web-angular/node_modules/
+web-angular/dist/
+web-angular/.angular/
