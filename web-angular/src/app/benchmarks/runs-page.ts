@@ -1,4 +1,5 @@
 import { Component, inject } from '@angular/core';
+import { RouterLink } from '@angular/router';
 
 import { BenchmarkService } from './benchmark.service';
 import { RunsAsync } from './runs-async';
@@ -10,8 +11,10 @@ import { RunsSignals } from './runs-signals';
  */
 @Component({
   selector: 'runs-page',
-  imports: [RunsAsync, RunsSignals],
+  imports: [RunsAsync, RunsSignals, RouterLink],
   template: `
+    <p><a routerLink="/runs/new">Nouveau run</a></p>
+
     <fieldset>
       <legend>Simuler la reponse du serveur, puis Recharger</legend>
       <label>
