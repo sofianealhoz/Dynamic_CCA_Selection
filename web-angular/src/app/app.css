@@ -1,0 +1,11 @@
+.columns {
+  display: flex;
+  gap: 2rem;
+  align-items: flex-start;
+}
+
+.columns section {
+  flex: 1;
+  border: 1px solid #ccc;
+  padding: 0.5rem 1rem;
+}

@@ -1,1 +1,19 @@
-/* You can add global styles to this file, and also import other style files */
+body {
+  font-family: system-ui, sans-serif;
+  margin: 1.5rem;
+}
+
+table {
+  border-collapse: collapse;
+}
+
+th,
+td {
+  border: 1px solid #ddd;
+  padding: 2px 8px;
+  text-align: left;
+}
+
+.error {
+  color: #b00020;
+}
