@@ -3,6 +3,7 @@ import { takeUntilDestroyed } from '@angular/core/rxjs-interop';
 
 import { BenchmarkService } from './benchmark.service';
 import { BenchmarkRun } from './benchmark.model';
+import { RunsTable } from './runs-table';
 
 /**
  * Version 2 : l'etat vit dans le composant, dans des signals.
@@ -11,9 +12,14 @@ import { BenchmarkRun } from './benchmark.model';
  */
 @Component({
   selector: 'runs-signals',
+  imports: [RunsTable],
   template: `
     <h2>Version signals</h2>
     <button (click)="load()">Recharger</button>
+
+    @if (selected(); as run) {
+      <p>Selection : {{ run.cca }} sur {{ run.network }}</p>
+    }
 
     @if (loading()) {
       <p>Chargement des runs...</p>
@@ -22,21 +28,11 @@ import { BenchmarkRun } from './benchmark.model';
     } @else if (runs().length === 0) {
       <p>Aucun run pour ce filtre.</p>
     } @else {
-      <table>
-        <thead>
-          <tr><th>Algorithme</th><th>Reseau</th><th>Debit (Mbps)</th><th>sRTT (ms)</th></tr>
-        </thead>
-        <tbody>
-          @for (run of runs(); track run.id) {
-            <tr>
-              <td>{{ run.cca }}</td>
-              <td>{{ run.network }}</td>
-              <td>{{ run.throughputMbps }}</td>
-              <td>{{ run.srttMs }}</td>
-            </tr>
-          }
-        </tbody>
-      </table>
+      <runs-table
+        [runs]="runs()"
+        [selectedId]="selected()?.id ?? null"
+        (select)="selected.set($event)"
+      />
     }
   `,
 })
@@ -47,6 +43,7 @@ export class RunsSignals {
   readonly loading = signal(true);
   readonly error = signal<string | null>(null);
   readonly runs = signal<BenchmarkRun[]>([]);
+  readonly selected = signal<BenchmarkRun | null>(null);
 
   constructor() {
     this.load();

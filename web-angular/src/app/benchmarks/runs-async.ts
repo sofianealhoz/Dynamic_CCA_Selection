@@ -1,9 +1,11 @@
-import { Component, inject } from '@angular/core';
+import { Component, inject, signal } from '@angular/core';
 import { AsyncPipe } from '@angular/common';
 import { Observable, of } from 'rxjs';
 import { catchError, map, startWith } from 'rxjs/operators';
 
 import { BenchmarkService } from './benchmark.service';
+import { BenchmarkRun } from './benchmark.model';
+import { RunsTable } from './runs-table';
 import { RunsViewState } from './view-state';
 
 /**
@@ -12,10 +14,14 @@ import { RunsViewState } from './view-state';
  */
 @Component({
   selector: 'runs-async',
-  imports: [AsyncPipe],
+  imports: [AsyncPipe, RunsTable],
   template: `
     <h2>Version pipe async</h2>
     <button (click)="reload()">Recharger</button>
+
+    @if (selected(); as run) {
+      <p>Selection : {{ run.cca }} sur {{ run.network }}</p>
+    }
 
     @if (state$ | async; as state) {
       @switch (state.status) {
@@ -29,21 +35,11 @@ import { RunsViewState } from './view-state';
           @if (state.runs.length === 0) {
             <p>Aucun run pour ce filtre.</p>
           } @else {
-            <table>
-              <thead>
-                <tr><th>Algorithme</th><th>Reseau</th><th>Debit (Mbps)</th><th>sRTT (ms)</th></tr>
-              </thead>
-              <tbody>
-                @for (run of state.runs; track run.id) {
-                  <tr>
-                    <td>{{ run.cca }}</td>
-                    <td>{{ run.network }}</td>
-                    <td>{{ run.throughputMbps }}</td>
-                    <td>{{ run.srttMs }}</td>
-                  </tr>
-                }
-              </tbody>
-            </table>
+            <runs-table
+              [runs]="state.runs"
+              [selectedId]="selected()?.id ?? null"
+              (select)="selected.set($event)"
+            />
           }
         }
       }
@@ -54,6 +50,10 @@ export class RunsAsync {
   private readonly benchmarks = inject(BenchmarkService);
 
   state$: Observable<RunsViewState> = this.buildState();
+
+  // La selection appartient au parent, pas a la table : c'est lui qui la stocke
+  // et qui la redescend en entree. La table ne fait que la refleter.
+  readonly selected = signal<BenchmarkRun | null>(null);
 
   private buildState(): Observable<RunsViewState> {
     return this.benchmarks.getRuns().pipe(
