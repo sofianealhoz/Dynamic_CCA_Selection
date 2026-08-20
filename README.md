@@ -1,14 +1,21 @@
 # Dynamic CCA Selection
 
-- Dynamic optimization of **TCP Congestion Control Algorithm (CCA)**
-- Combines:
-  - **eBPF** for low-level kernel monitoring & control
-  - **Machine Learning** for real-time network type prediction
-- Fully automated, **real-time process**
+Server-side selection of the **TCP Congestion Control Algorithm (CCA)** based on the type of network a
+client is connecting from, decided per connection and applied in real time.
+
+The repository holds three layers:
+
+| Layer | What it does | Stack |
+|---|---|---|
+| **Real-time pipeline** | Detects a new connection, samples TCP metrics, predicts the network type, applies the matching CCA in the kernel | Python, eBPF, scikit-learn |
+| **Benchmark automation** | Runs the benchmark campaigns, aggregates the results and loads them into a database on a schedule | Apache Airflow, MySQL |
+| **Web interface** | Browses benchmark runs, filters and sorts them, opens a run detail, submits a new run | Angular, TypeScript |
 
 ---
 
-## Step 1 – Detecting New Connections (`event_listener.py`)
+## Real-time pipeline
+
+### Step 1 - Detecting new connections (`event_listener.py`)
 
 - Persistent **Python listener service**
 - eBPF attached to kernel function: `tcp_ack`
@@ -18,9 +25,7 @@
   - If IP not yet processed:
     - Triggers analysis with **subprocesses**
 
----
-
-## Step 2 – Collecting TCP Metrics (`get_socket_data.py`)
+### Step 2 - Collecting TCP metrics (`get_socket_data.py`)
 
 - Launches **detailed eBPF probe**
 - Attached to `tcp_ack`
@@ -34,9 +39,7 @@
   - Duration: 15 seconds
 - Saves data to: `data_prod.csv`
 
----
-
-## Step 3 – Network Type Prediction (`predict_cca.py`)
+### Step 3 - Network type prediction (`predict_cca.py`)
 
 - Loads ML model: `trained_classifier.pkl`
 - Model trained with `RandomForest` on labeled dataset
@@ -46,25 +49,21 @@
 - Final prediction = **most frequent** network type:
   - `fiber`, `wifi`, `mobile`, `datacenter`
 
----
+### Step 4 - Updating the eBPF map (`predict_cca.py`)
 
-## Step 4 – Updating eBPF Map (`predict_cca.py`)
-
-- Maps network type → optimal CCA:
-  - `wifi` → `cubic`
-  - `fiber` → `bbr`
-  - `mobile` → `bbr`
-  - `datacenter` → `dctcp`
+- Maps network type to optimal CCA:
+  - `wifi` to `cubic`
+  - `fiber` to `bbr`
+  - `mobile` to `bbr`
+  - `datacenter` to `dctcp`
 - Accesses pinned map: `/sys/fs/bpf/key_cong_map`
 - Writes:
   - **Key**: IP address
   - **Value**: CCA name (e.g., `"bbr"`)
 
----
+### Step 5 - Applying the CCA (kernel programs)
 
-## Step 5 – Applying the CCA (eBPF Kernel Programs)
-
-### Files: `load_sock_ops.c`, `tcp_changecc_kern.c`
+Files: `load_sock_ops.c`, `tcp_changecc_kern.c`
 
 - eBPF program of type `sock_ops`
 - **Loaded at boot**, attached to a `cgroup`
@@ -77,3 +76,59 @@
     - Uses **system default CCA**
 
 ---
+
+## Benchmark automation (`airflow/`)
+
+Measuring one CCA against one network type takes minutes and has to be repeated across every
+combination, so the campaigns are orchestrated instead of launched by hand.
+
+| DAG | Schedule | Role |
+|---|---|---|
+| `benchmarks_png_pipeline` | daily, 07:00 | Runs the benchmark campaign and produces the comparison charts |
+| `mysql_benchmark_import` | daily | Loads the aggregated results into MySQL |
+| `import_benchmark_csv_dag` | on demand | Imports a benchmark CSV into the database |
+| `bpf_preparation` | manual trigger | Prepares and loads the kernel programs before a run |
+
+Supporting scripts: `run_all_benchmarks.py`, `aggregate_csv.py`, `calculate_averages.py`, `graph.py`.
+
+---
+
+## Web interface (`web-angular/`)
+
+An Angular application to browse the benchmark runs produced by the pipeline. The matching REST API
+lives in `web/` (Django): `GET /api/runs/`, `GET /api/runs/<id>/`, `POST /api/runs/launch/`.
+
+Structure, under `src/app/benchmarks/`:
+
+- **`benchmark.service.ts`** - data layer. No component knows where a run comes from: the service
+  returns `Observable`s, so the source can change without touching a single view.
+- **`runs-table.ts`** - **reusable presentation component**. It takes a `runs` input and emits a
+  `select` output; it knows nothing about the service, nor about what a click leads to. That is what
+  makes it reusable across pages.
+- **`runs-async.ts` / `runs-signals.ts`** - the same list handled two ways, with the `async` pipe and
+  with signals, both covering the four states: loading, error, data and empty.
+- **`runs-page.ts`** - filtering and sorting held as derived state rather than duplicated fields.
+- **`run-detail.ts`** - detail view routed by an `id` URL parameter.
+- **`run-form.ts`** - creation form with client-side validation, and handling of the **409 Conflict**
+  the server returns when the same algorithm, network and duration triple already exists. Uniqueness is
+  a server rule: the client cannot guarantee it, so it has to handle the refusal.
+
+Run it with `npm install` then `npm start` inside `web-angular/`.
+
+---
+
+## Repository layout
+
+| Path | Contents |
+|---|---|
+| `*.py`, `*.c` at the root | Real-time pipeline: listener, probes, prediction, kernel programs |
+| `airflow/` | DAGs orchestrating the benchmark campaigns |
+| `web/` | Django back end exposing the benchmark REST API |
+| `web-angular/` | Angular front end |
+| `frontend/` | Earlier Vue front end, kept for reference |
+| `benchmarck_*.csv`, `new_dataset*.csv` | Raw benchmark measurements and the training dataset |
+| `scientific_analysis.py`, `shap_summary_plot.png` | Model analysis and feature importance |
+
+## License
+
+MIT, see `LICENSE`.
