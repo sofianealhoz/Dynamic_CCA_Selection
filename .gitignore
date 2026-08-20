@@ -1,8 +1,18 @@
-# Environnement Python
-.venv/
-env/
+# Python
 __pycache__/
 *.py[cod]
+*$py.class
+*.so
+.Python
+build/
+dist/
+*.egg-info/
+.venv/
+venv/
+env/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
 *.sqlite3
 db.sqlite3
 
@@ -12,6 +22,13 @@ staticfiles/
 media/
 *.pot
 
+# C build artifacts
+*.o
+*.obj
+
+# Jupyter
+.ipynb_checkpoints/
+
 # Node / Vue
 frontend/node_modules/
 frontend/dist/
@@ -19,10 +36,13 @@ frontend/.vite/
 frontend/npm-debug.log*
 frontend/yarn-*.log*
 
-# Build Vue copiée dans Django (si tu préfères la régénérer)
+# Build Vue copiee dans Django (si tu preferes la regenerer)
 web/benchmarks/static/benchmarks/vue/
 
-# OS / éditeurs
+# Editors / OS
+*.swp
+*.swo
+*.orig
 .DS_Store
 Thumbs.db
 .idea/
