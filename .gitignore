@@ -60,6 +60,9 @@ package.json
 # Notes de travail front, locales
 NOTES.md
 
+# Brouillon de DAG jamais termine, garde en local
+airflow/airflow/dags/import_benchmark_csv_dag.py
+
 # App Angular : les regles package*.json ci-dessus sont trop larges
 !web-angular/package.json
 !web-angular/package-lock.json
