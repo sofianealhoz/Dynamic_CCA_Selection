@@ -9,7 +9,7 @@ from airflow.operators.python import PythonOperator
 from airflow.providers.mysql.hooks.mysql import MySqlHook
 from airflow.providers.mysql.operators.mysql import MySqlOperator
 
-CSV_PATH = Path("/home/sofiane/Dynamic_CCA_Selection/benchmark_data_troughput_and_srtt.csv")
+CSV_PATH = Path("/home/sofiane/Dynamic_CCA_Selection/data/benchmark_data_troughput_and_srtt.csv")
 CONN_ID = "mysql_benchmarks"
 
 default_args = {
@@ -79,7 +79,7 @@ with DAG(
         python_callable=load_csv,
         provide_context=True,
         retries=2,
-        retry_delay=timedelta(minutes=5)
+        retry_delay=timedelta(minutes=5),
         execution_timeout=timedelta(minutes=10),
 
     )

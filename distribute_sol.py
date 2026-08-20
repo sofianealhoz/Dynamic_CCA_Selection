@@ -6,7 +6,7 @@ def distribute_solution_values():
     """
     
     # Lire le fichier CSV
-    df = pd.read_csv('benchmark_data_troughput_and_srtt.csv')
+    df = pd.read_csv('data/benchmark_data_troughput_and_srtt.csv')
     
     print("Avant modification:")
     print(f"Nombre total de lignes: {len(df)}")
@@ -62,7 +62,7 @@ def distribute_solution_values():
     df_cleaned = df_cleaned.sort_values(by='algo')
     
     # Sauvegarder le fichier modifié
-    df_cleaned.to_csv('benchmark_data_troughput_and_srtt.csv', index=False)
+    df_cleaned.to_csv('data/benchmark_data_troughput_and_srtt.csv', index=False)
     
     print("\nFichier mis à jour et sauvegardé!")
     
@@ -90,7 +90,7 @@ def verify_solution_distribution():
     """
     Vérifier que la distribution a été faite correctement
     """
-    df = pd.read_csv('benchmark_data_troughput_and_srtt.csv')
+    df = pd.read_csv('data/benchmark_data_troughput_and_srtt.csv')
     
     print("\nVérification de la distribution:")
     print("=" * 50)
@@ -130,5 +130,5 @@ if __name__ == "__main__":
     
     print("\n" + "="*80)
     print("TERMINÉ!")
-    print("Le fichier 'benchmark_data_troughput_and_srtt.csv' a été mis à jour.")
+    print("Le fichier 'data/benchmark_data_troughput_and_srtt.csv' a été mis à jour.")
     print("Les valeurs de la solution ont été distribuées dans les colonnes appropriées.")

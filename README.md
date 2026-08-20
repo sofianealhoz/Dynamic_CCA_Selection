@@ -86,7 +86,6 @@ combination, so the campaigns are orchestrated instead of launched by hand.
 |---|---|---|
 | `benchmarks_png_pipeline` | daily, 07:00 | Runs the benchmark campaign and produces the comparison charts |
 | `mysql_benchmark_import` | daily | Loads the aggregated results into MySQL |
-| `import_benchmark_csv_dag` | on demand | Imports a benchmark CSV into the database |
 | `bpf_preparation` | manual trigger | Prepares and loads the kernel programs before a run |
 
 Supporting scripts: `run_all_benchmarks.py`, `aggregate_csv.py`, `calculate_averages.py`, `graph.py`.
@@ -126,7 +125,9 @@ Run it with `npm install` then `npm start` inside `web-angular/`.
 | `web/` | Django back end exposing the benchmark REST API |
 | `web-angular/` | Angular front end |
 | `frontend/` | Earlier Vue front end, kept for reference |
-| `benchmarck_*.csv`, `new_dataset*.csv` | Raw benchmark measurements and the training dataset |
+| `data/benchmarks/` | Raw benchmark measurements, one file per algorithm, network and duration |
+| `data/datasets/` | Training datasets for the classifier |
+| `data/` | Aggregated results (`benchmark_data_troughput_and_srtt.csv`), pipeline output and SQL schema |
 | `scientific_analysis.py`, `shap_summary_plot.png` | Model analysis and feature importance |
 
 ## License

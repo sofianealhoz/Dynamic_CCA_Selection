@@ -14,7 +14,7 @@ from sklearn.model_selection import StratifiedKFold
 import joblib
 
 
-df = pd.read_csv('new_dataset2-.csv')
+df = pd.read_csv('data/datasets/new_dataset2-.csv')
 
 
 label_encoder_label = LabelEncoder() # Renommer pour clarté

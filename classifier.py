@@ -12,7 +12,7 @@ import matplotlib.pyplot as plt
 import numpy as np 
 from sklearn.model_selection import StratifiedKFold
 
-df = pd.read_csv('new_dataset2.csv')
+df = pd.read_csv('data/datasets/new_dataset2.csv')
 
 label_encoder = LabelEncoder()
 df['label_encoded'] = label_encoder.fit_transform(df['label'])

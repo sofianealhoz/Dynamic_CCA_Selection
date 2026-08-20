@@ -6,9 +6,9 @@ import numpy as np
 plt.ioff()
 
 # Read the data file
-df = pd.read_csv('benchmark_data_troughput_and_srtt.csv')
+df = pd.read_csv('data/benchmark_data_troughput_and_srtt.csv')
 df = df.sort_values(by='algo')  # On trie, df devient un DataFrame trié
-df.to_csv('benchmark_data_troughput_and_srtt.csv', index=False)  # On sauvegarde, mais on ne change PAS df !# Function to calculate gain percentage
+df.to_csv('data/benchmark_data_troughput_and_srtt.csv', index=False)  # On sauvegarde, mais on ne change PAS df !# Function to calculate gain percentage
 def calculate_gain(algo_value, solution_value):
     return ((solution_value - algo_value) / algo_value) * 100
 

@@ -105,7 +105,7 @@ def analyze_cross_correlation(df):
 
 if __name__ == "__main__":
     # Remplacez par le chemin réel de votre fichier
-    FILENAME = "benchmark_data_troughput_and_srtt.csv" 
+    FILENAME = "data/benchmark_data_troughput_and_srtt.csv"
     
     try:
         print("Chargement des données...")
